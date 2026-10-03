@@ -39,8 +39,13 @@ CAT_IDS = [c["id"] for c in CATEGORIES]
 lock = threading.Lock()
 
 THEMES = ["classica", "pride", "natale", "medievale", "matrix", "spazio", "tropicale", "halloween", "synthwave", "giappone",
-          "western", "abissi", "foresta", "inferno", "tempesta", "egitto", "disco", "comics", "candy", "noir"]
+          "western", "abissi", "foresta", "inferno", "tempesta", "egitto", "disco", "comics", "candy", "noir",
+          "vichinghi", "zombie", "vampiri", "robot", "alieni", "dinosauri", "ghiaccio", "deserto", "giungla", "circo",
+          "carnevale", "calcio", "formula1", "samba", "messico", "india", "grecia", "gladiatori", "chef", "gelato",
+          "burger", "autunno", "unicorni", "streghe", "cyberpunk", "steampunk", "polare", "atlantide", "safari", "rock",
+          "jazz", "hippie", "pigiama", "campeggio", "parigi", "londra", "casino", "gaming", "kawaii", "nonna"]
 THEME_SECS = 60
+THEME_SKIP_AFTER = 15  # secondi dopo i quali chiunque può passare al tema successivo
 theme = {"id": None, "seq": 0, "until": 0.0}  # tema corrente, uguale per tutti i dispositivi
 
 
@@ -59,7 +64,8 @@ def theme_state():  # da chiamare con il lock preso
         theme["id"] = random.choice([t for t in THEMES if t != theme["id"]])
         theme["seq"] += 1
         theme["until"] = now + THEME_SECS
-    return {"id": theme["id"], "seq": theme["seq"], "left": round(theme["until"] - now, 1), "total": THEME_SECS, "enabled": True}
+    return {"id": theme["id"], "seq": theme["seq"], "left": round(theme["until"] - now, 1), "total": THEME_SECS, "enabled": True,
+            "skip_after": THEME_SKIP_AFTER}
 
 REACTIONS = ["🔥", "😍", "🤤", "🤮", "😱", "👏", "💩", "🍍"]
 reactions = []  # [{id, name, emoji}] solo in memoria, ultime 200
@@ -450,6 +456,13 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 theme["until"] = 0
                 return self.send_json(theme_state())
+        if path == "/api/theme/skip":  # aperto a tutti, ma solo dopo THEME_SKIP_AFTER secondi dall'inizio del tema
+            with lock:
+                st = theme_state()
+                if st["enabled"] and THEME_SECS - st["left"] >= THEME_SKIP_AFTER:
+                    theme["until"] = 0
+                    st = theme_state()
+                return self.send_json(st)
         if path == "/api/theme/set":
             if not self.local_only():
                 return

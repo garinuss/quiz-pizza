@@ -5,7 +5,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const eur = v => '€ ' + v.toFixed(2).replace('.', ',');
   const $ = id => document.getElementById(id);
-  let off = 0, curSeq = 0, dismissed = 0, running = false, data = null, t0 = 0, raf = 0, el = null;
+  let off = 0, curSeq = 0, dismissed = 0, running = false, data = null, t0 = 0, raf = 0, el = null, btn = null, opened = false;
 
   const css = document.createElement('style');
   css.textContent = `
@@ -13,6 +13,8 @@
     background:radial-gradient(120% 90% at 50% 0%,var(--bg2),var(--bg) 70%); animation:cin .6s both; }
   @keyframes cin { from { opacity:0; transform:scale(1.04); } }
   #cfx { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+  #cbtn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:250; padding:10px 18px; border-radius:99px; border:1px solid rgba(var(--gold-rgb),.6); background:linear-gradient(90deg,var(--gold),var(--red)); color:#111; font:800 .95rem var(--font); cursor:pointer; box-shadow:0 8px 30px rgba(var(--red-rgb),.5); animation:cbtnp 1.6s ease-in-out infinite; }
+  @keyframes cbtnp { 50% { transform:translateX(-50%) scale(1.06); } }
   #cer .cx { position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px; z-index:5; width:42px; height:42px; padding:0; border-radius:50%; border:1px solid var(--line); background:var(--glass); color:var(--ink); font-size:1.1rem; cursor:pointer; }
   #cer .cin { position:relative; z-index:2; max-width:980px; margin:0 auto; text-align:center; }
   #cer .ctitle { font-size:clamp(1.6rem,5vw,3rem); font-weight:900; letter-spacing:.06em; text-transform:uppercase; margin:8px 0 4px;
@@ -106,20 +108,29 @@
       const text = '🏆 Il verdetto della sfida delle pizze surgelate!\n' + top.map((p, i) => `${med[i]} ${p.name} (${f1(p.total)})`).join('\n') + '\n#SfidaPizze 🍕';
       window.shareSheet && shareSheet({text, card: {title: 'Il verdetto', subtitle: 'Sfida delle pizze surgelate', rows: top.map((p, i) => ({icon: med[i], label: p.name, value: f1(p.total)}))}});
     };
-    el.querySelector('.cx').onclick = () => { if (isDash) fetch('/api/ceremony/stop', {method: 'POST'}); dismissed = curSeq; stop(); };
+    el.querySelector('.cx').onclick = () => { if (isDash) { fetch('/api/ceremony/stop', {method: 'POST'}); dismissed = curSeq; stop(); } else { stop(); showBtn(); } };
   }
 
-  function stop() { running = false; cancelAnimationFrame(raf); cancelAnimationFrame(fxRaf); fx = null; parts = []; clearInterval(burstT); el && el.remove(); el = null; }
+  function showBtn() {
+    if (btn) return;
+    btn = document.createElement('button'); btn.id = 'cbtn'; btn.textContent = '🏆 Apri il resoconto';
+    btn.onclick = () => { const s = Date.now() + off - 5000; hideBtn(); start(s, true); };
+    document.body.appendChild(btn);
+  }
+  function hideBtn() { btn && btn.remove(); btn = null; }
 
-  async function start(t0ms) {
+  function stop() { hideBtn(); running = false; cancelAnimationFrame(raf); cancelAnimationFrame(fxRaf); fx = null; parts = []; clearInterval(burstT); el && el.remove(); el = null; }
+
+  async function start(t0ms, openNow) {
     let d; try { const r = await fetch('/api/final', {cache: 'no-store'}); if (!r.ok) return; d = await r.json(); } catch { return; }
     if (running) stop();
-    data = d; t0 = t0ms; running = true;
+    data = d; t0 = t0ms; running = true; opened = !!openNow;
     const P = plan(); build(P);
     const shown = new Set(); let lastCount = null, drummed = false, fw = false, awShown = 0, betsShown = false, awHead = false;
     const loop = () => {
       if (!running) return;
       const e = Date.now() + off - t0, fresh = ms => e - ms < 1600;
+      if (e >= 5000 && !opened) { stop(); showBtn(); return; }   // finito il countdown: il resoconto si apre solo dal pulsante
       if (e < 5000) {
         const c = Math.max(1, Math.ceil((5000 - Math.max(0, e)) / 1000)), cc = $('ccount');
         if (e >= 0 && c !== lastCount) { lastCount = c; cc.textContent = c; cc.classList.remove('t'); void cc.offsetWidth; cc.classList.add('t'); window.sfx && sfx.tick(c === 1); }
@@ -151,7 +162,7 @@
       const r = await (await fetch('/api/ceremony', {cache: 'no-store'})).json();
       off = r.now * 1000 - Date.now(); window.CEREMONY = {active: r.active};
       if (r.active) { if (r.seq !== curSeq) { curSeq = r.seq; if (r.seq !== dismissed) await start(r.t0 * 1000); } }
-      else if (running) stop();
+      else { if (running) stop(); hideBtn(); }
     } catch {}
   }
   setInterval(poll, 1500); poll();

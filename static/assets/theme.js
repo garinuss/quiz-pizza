@@ -15,7 +15,7 @@
     type: '"Courier New",Courier,monospace',
   };
   const mk = o => ({
-    id: o.id, name: o.name, emoji: o.emoji, rain: o.rain, fx: o.fx, fxOpacity: o.fxOpacity ?? 1, fxColor: o.fxColor, fxMult: o.fxMult, cycle: !!o.cycle, confetti: o.confetti, sub: o.sub,
+    id: o.id, name: o.name, emoji: o.emoji, rain: o.rain, fx: o.fx, fxOpacity: o.fxOpacity ?? 1, fxColor: o.fxColor, fxMult: o.fxMult, cycle: !!o.cycle, confetti: o.confetti, sub: o.sub, dc: o.dc, ground: o.ground,
     vars: {
       '--bg': o.bg, '--bg2': o.bg2, '--bar': `rgba(${rgb(o.bg)},.8)`, '--ink': o.ink, '--mut': o.mut,
       '--gold': o.gold, '--red': o.red, '--gold-rgb': rgb(o.gold), '--red-rgb': rgb(o.red),
@@ -67,6 +67,60 @@
     mk({ id:'noir', name:'Cinema Noir', emoji:'🎬', sub:'ho assaggiato cose che voi umani…', bg:'#0b0b0c', bg2:'#161617', ink:'#eeeeee', mut:'#9a9a9a', gold:'#e8d9a0', red:'#b0262b', a1:'#3a3a3c', a2:'#e8d9a0', a3:'#b0262b', font:'type', glass:'rgba(255,255,255,.05)',
          rain:['🎬','🕵️','🚬','🎞️','🎩','🔍'], fx:'grain', confetti:['#e8d9a0','#b0262b','#eeeeee','#9a9a9a'] }),
   ];
+
+  /* altri 40 temi pazzi: stessa struttura, definiti in modo compatto (colori derivati da sfondo/oro/rosso) */
+  const mix = (a, b, t) => { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), c = s => Math.round(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
+    return '#' + ((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1); };
+  const Q = (id, name, emoji, sub, bg, gold, red, fx, rain, o = {}) => { const ink = o.ink || '#ffffff';
+    THEMES.push(mk({ id, name, emoji, sub, bg, bg2: o.bg2 || mix(bg, '#ffffff', .08), ink, mut: mix(ink, bg, .4), gold, red, a1: o.a1 || red, a2: o.a2 || gold, a3: o.a3 || mix(bg, gold, .4),
+      font: o.font, glass: o.glass, line: o.line, rain, fx, fxOpacity: o.op, fxColor: o.col, fxMult: o.mult, cycle: o.cycle, dc: o.dc, ground: o.ground,
+      confetti: o.conf || [gold, red, ink, mix(bg, gold, .5)] })); };
+
+  Q('vichinghi', 'Vichinghi', '🛡️', 'al Valhalla con la pizza in mano', '#0b1219', '#d9b26a', '#b23a2e', 'snow', ['🛡️','🪓','⛵','🍖','🐺','⚡'], { font:'serif', ink:'#eaf0f5', dc:'⚔️', ground:'rgba(200,220,240,.2)' });
+  Q('zombie', 'Zombie', '🧟', 'cervelli? no, solo mozzarella', '#0a1208', '#a6ff3d', '#c0392b', 'fireflies', ['🧟','🧠','🦴','⚰️','🩸','🪦'], { font:'spooky', ink:'#e4ffd6', dc:'🌕', ground:'rgba(120,255,60,.22)', op:.8 });
+  Q('vampiri', 'Vampiri', '🧛', 'solo pizza all’aglio. no wait…', '#13040a', '#e8c46a', '#d1203c', 'bats', ['🧛','🦇','🩸','🏰','🌹','⚰️'], { font:'spooky', ink:'#ffe9ee', dc:'🌕', ground:'rgba(209,32,60,.25)' });
+  Q('robot', 'Robot', '🤖', 'bip bop, tre minuti di forno', '#0b1018', '#7cf0ff', '#ff7a45', 'grid', ['🤖','⚙️','🔋','🦾','📡','💡'], { font:'mono', ink:'#e6f8ff', op:.4, line:'rgba(124,240,255,.22)', dc:'📡' });
+  Q('alieni', 'Alieni', '👽', 'portami al tuo forno', '#06140f', '#9dff6a', '#b24dff', 'stars', ['👽','🛸','🌌','🛰️','☄️','🧪'], { ink:'#eaffe8', dc:'🛸', ground:'rgba(157,255,106,.18)' });
+  Q('dinosauri', 'Dinosauri', '🦖', 'estinti… ma non le pizze', '#161006', '#ffb347', '#d9482b', 'dust', ['🦖','🦕','🥚','🌋','🌿','🦴'], { font:'soft', col:'rgba(255,170,80,', ink:'#fff1da', dc:'🌋', ground:'rgba(255,120,40,.25)' });
+  Q('ghiaccio', 'Era Glaciale', '🧊', 'pizza surgelata, dal 20000 a.C.', '#071a26', '#9fe8ff', '#4aa8ff', 'snow', ['🧊','❄️','🦣','🐧','⛄','🥶'], { font:'soft', ink:'#eefaff', mult:1.8, dc:'❄️', ground:'rgba(200,240,255,.25)' });
+  Q('deserto', 'Deserto', '🏜️', 'miraggio di mozzarella', '#21140a', '#ffc766', '#d1642a', 'dust', ['🏜️','🌵','🐪','🦂','☀️','🥵'], { font:'serif', col:'rgba(255,200,130,', mult:1.6, ink:'#fff0d6', dc:'☀️', ground:'rgba(255,170,70,.25)' });
+  Q('giungla', 'Giungla', '🦜', 'benvenuti nella giungla (di basilico)', '#06170a', '#ffe14d', '#ff5a36', 'fireflies', ['🦜','🐒','🐍','🌴','🦧','🍌'], { font:'soft', ink:'#efffe0', dc:'🐒', ground:'rgba(60,200,90,.22)' });
+  Q('circo', 'Circo', '🎪', 'signore e signori… la pizza!', '#1b0a2a', '#ffd23f', '#ff3b4e', 'confetti', ['🎪','🤹','🎠','🤡','🎈','🐘'], { font:'comic', ink:'#fff5e6', conf:['#ff3b4e','#ffd23f','#ffffff','#3b8bff'], dc:'🎈' });
+  Q('carnevale', 'Carnevale', '🎭', 'a Carnevale ogni pizza vale', '#190a24', '#ffcf3d', '#ff4fa3', 'confetti', ['🎭','🎊','🎉','🪅','🃏','🎶'], { font:'soft', conf:['#ffcf3d','#ff4fa3','#34d6c9','#9b5cff'], dc:'🎭' });
+  Q('calcio', 'Calcio', '⚽', 'fischio d’inizio: si mangia!', '#06210f', '#ffffff', '#ffd400', 'confetti', ['⚽','🥅','🏆','🧤','👟','📣'], { font:'comic', a3:'#0f6a2e', conf:['#ffffff','#ffd400','#1faa59','#ff3b3b'], dc:'🏆', ground:'rgba(60,200,100,.28)' });
+  Q('formula1', 'Formula 1', '🏎️', 'pizza al pit stop in 2 secondi', '#120a0a', '#ffdd00', '#e10600', 'grid', ['🏎️','🏁','🛞','⛽','🏆','🚦'], { font:'mono', op:.4, ink:'#fff4f0', dc:'🏁', ground:'rgba(225,6,0,.3)' });
+  Q('samba', 'Samba', '💃', 'carnevale a Rio, farcito', '#0a1f12', '#ffe600', '#00c853', 'confetti', ['💃','🥁','🦜','🎺','🌴','🎉'], { font:'soft', conf:['#ffe600','#00c853','#1e88e5','#ffffff'], dc:'🥁' });
+  Q('messico', 'Messico', '🌮', 'ay caramba, che pizza!', '#1f0c10', '#ffc93c', '#ff3d6e', 'confetti', ['🌮','🌶️','🪇','🎺','🌵','💀'], { font:'soft', conf:['#ff3d6e','#ffc93c','#26c6a6','#9b5cff'], dc:'🪅' });
+  Q('india', 'India', '🛕', 'pizza masala extra piccante', '#1f0d06', '#ffb21f', '#e8431a', 'petals', ['🛕','🐘','🪔','🌶️','🪷','🍛'], { font:'serif', ink:'#fff0db', dc:'🪔', ground:'rgba(255,150,40,.25)' });
+  Q('grecia', 'Grecia', '🏛️', 'filosofia, feta e forno', '#06182a', '#ffffff', '#2f8cff', 'dust', ['🏛️','⚱️','🫒','🔱','🌊','🍇'], { font:'serif', col:'rgba(180,215,255,', a3:'#0d5eaf', dc:'🏛️', ground:'rgba(47,140,255,.28)' });
+  Q('gladiatori', 'Gladiatori', '🏟️', 'siete pronti a mangiare?!', '#1d0f08', '#e8b04a', '#b2271f', 'embers', ['🏟️','⚔️','🛡️','🦁','🏛️','🍇'], { font:'serif', ink:'#fbead2', mult:1.3, dc:'🏟️', ground:'rgba(232,176,74,.22)' });
+  Q('chef', 'Chef Stellato', '👨‍🍳', 'un tocco di basilico, e passa la paura', '#1a1a1a', '#f5f5f5', '#d33a2c', 'embers', ['👨‍🍳','🔪','🍳','🧑‍🍳','🥄','🍽️'], { font:'serif', mult:.6, a3:'#7a7a7a', dc:'🍽️' });
+  Q('gelato', 'Gelateria', '🍦', 'pizza e gelato: sì, no, forse', '#241226', '#ffe0a3', '#ff6fa8', 'bubbles', ['🍦','🍨','🍧','🍒','🍓','🧁'], { font:'soft', ink:'#fff3fb', dc:'🍦', ground:'rgba(255,111,168,.2)' });
+  Q('burger', 'Fast Food', '🍔', 'tradimento: panino contro pizza', '#1f0f06', '#ffc41f', '#e8331c', 'sprinkles', ['🍔','🍟','🥤','🌭','🥓','🍗'], { font:'comic', ink:'#fff2dc', dc:'🍔', ground:'rgba(255,196,31,.22)' });
+  Q('autunno', 'Autunno', '🍂', 'foglie, funghi e pizza ai porcini', '#1a0f06', '#ff9a3c', '#c8431f', 'petals', ['🍂','🍁','🍄','🌰','🎃','🍇'], { font:'serif', ink:'#ffeede', dc:'🍁', ground:'rgba(255,140,50,.2)' });
+  Q('unicorni', 'Unicorni', '🦄', 'scintillii di mozzarella magica', '#1d1033', '#ffd1f0', '#a77bff', 'sprinkles', ['🦄','🌈','✨','🍭','☁️','💖'], { font:'soft', cycle:true, conf:['#ff9ccf','#a77bff','#7fe3ff','#fff1a8'], dc:'🌈' });
+  Q('streghe', 'Streghe e Maghi', '🧙', 'abracadabra: pizza!', '#10061f', '#c88bff', '#3ddc97', 'fireflies', ['🧙','🔮','🧪','📜','🪄','🕯️'], { font:'spooky', ink:'#f3e8ff', dc:'🔮', ground:'rgba(200,139,255,.22)' });
+  Q('cyberpunk', 'Cyberpunk', '🌃', 'pizza 2077, consegna in drone', '#0a0714', '#faff3d', '#ff2a6d', 'rain', ['🌃','🤖','🦾','💊','📺','🏙️'], { font:'mono', glass:'rgba(255,42,109,.07)', line:'rgba(250,255,61,.25)', ink:'#f4f5ff', dc:'📺', ground:'rgba(255,42,109,.25)' });
+  Q('steampunk', 'Steampunk', '⚙️', 'forno a vapore e ingranaggi', '#1a1008', '#d9a35b', '#b4532a', 'embers', ['⚙️','🎩','🔧','🕰️','🚂','🧭'], { font:'serif', ink:'#f6e4c6', mult:.8, dc:'⚙️', ground:'rgba(217,163,91,.2)' });
+  Q('polare', 'Polo Nord', '🐧', 'pinguini e pizza ai 4 formaggi', '#071522', '#bff0ff', '#ff8a4a', 'snow', ['🐧','🐻‍❄️','🧊','🦭','❄️','🎿'], { font:'soft', ink:'#f0fbff', mult:2.2, dc:'🌌', ground:'rgba(220,245,255,.28)' });
+  Q('atlantide', 'Atlantide', '🔱', 'la città perduta dei crostini', '#04162b', '#7ef0e0', '#8f5bff', 'fish', ['🔱','🧜','🐬','🪸','🐚','🦀'], { font:'serif', ink:'#e6fffb', dc:'🔱', ground:'rgba(126,240,224,.2)' });
+  Q('safari', 'Safari', '🦁', 'nella savana nessuno ti sente mangiare', '#1d1307', '#ffcf5a', '#d35a1f', 'dust', ['🦁','🦒','🐘','🦓','🐆','🦏'], { font:'soft', col:'rgba(255,210,120,', ink:'#fff3d9', dc:'🌅', ground:'rgba(255,170,60,.28)' });
+  Q('rock', 'Rock’n’Roll', '🎸', 'we will, we will… pizza!', '#0d0d10', '#ff3b3b', '#f5c518', 'embers', ['🎸','🤘','🥁','🎤','⚡','🔊'], { font:'comic', ink:'#fff', mult:1.2, dc:'🤘', ground:'rgba(255,59,59,.25)' });
+  Q('jazz', 'Jazz Club', '🎷', 'sax, fumo e mozzarella blu', '#0a0f1f', '#ffc766', '#4f7bff', 'grain', ['🎷','🎹','🎺','🥃','🎶','🎩'], { font:'serif', ink:'#eef2ff', glass:'rgba(255,255,255,.05)', dc:'🎷', ground:'rgba(79,123,255,.2)' });
+  Q('hippie', 'Anni ’70 Hippie', '☮️', 'peace, love & pizza', '#241008', '#ffd23a', '#ff6b2b', 'petals', ['☮️','🌻','🌼','🕊️','🚐','🎸'], { font:'soft', ink:'#fff3d8', cycle:true, conf:['#ffd23a','#ff6b2b','#7ac943','#ff5fa2'], dc:'🌻' });
+  Q('pigiama', 'Pigiama Party', '🛏️', 'cuscini, film e pizza a mezzanotte', '#0d1030', '#ffd6f0', '#8ea2ff', 'stars', ['🛏️','🧸','😴','🌙','🍿','🧦'], { font:'soft', ink:'#f3f1ff', dc:'🌙', ground:'rgba(142,162,255,.2)' });
+  Q('campeggio', 'Campeggio', '⛺', 'pizza al falò sotto le stelle', '#08140f', '#ffb347', '#ff5a1f', 'fireflies', ['⛺','🔥','🌲','🦉','🪵','🌌'], { font:'soft', ink:'#f0fff0', dc:'🔥', ground:'rgba(255,140,40,.28)' });
+  Q('parigi', 'Parigi', '🥐', 'oui oui, la pizza è un po’ francese', '#13152b', '#f5d9a0', '#ef476f', 'petals', ['🥐','🗼','🥖','🧀','🍷','🎨'], { font:'serif', ink:'#fff4f4', dc:'🗼', ground:'rgba(239,71,111,.2)' });
+  Q('londra', 'Londra', '☂️', 'tè delle cinque… e pizza delle sei', '#0e1219', '#e5c158', '#d12f3f', 'rain', ['☂️','🫖','🎩','🚌','👑','💂'], { font:'serif', ink:'#eef1f7', dc:'👑', ground:'rgba(209,47,63,.2)' });
+  Q('casino', 'Casinò', '🎰', 'rien ne va plus: all-in sulla pizza', '#0a1d12', '#ffd700', '#e0222d', 'confetti', ['🎰','🃏','🎲','🪙','♠️','💰'], { font:'serif', conf:['#ffd700','#e0222d','#ffffff','#1faa59'], dc:'🎰', ground:'rgba(255,215,0,.2)' });
+  Q('gaming', 'Gaming 8-bit', '👾', 'insert coin: pizza continua?', '#0a0a1f', '#ffe14d', '#ff4d6d', 'grid', ['👾','🕹️','🎮','🍄','⭐','🪙'], { font:'mono', op:.45, ink:'#eef', dc:'👾' });
+  Q('kawaii', 'Kawaii', '🐱', 'nyaa~ che pizza carina!', '#2a1230', '#ffd1e8', '#7fe0ff', 'sprinkles', ['🐱','🍡','🧸','🌸','🍓','💕'], { font:'soft', cycle:true, ink:'#fff5fb', dc:'🐱' });
+  Q('nonna', 'Cucina della Nonna', '👵', 'la pizza di nonna è un’altra cosa', '#1c140c', '#ffd9a0', '#c8472e', 'grain', ['👵','🧶','🍝','🥘','🍅','🧁'], { font:'type', ink:'#fff3e2', dc:'🧶', ground:'rgba(255,217,160,.18)' });
+
+  /* decorazioni dei nuovi temi: emoji fluttuante in un angolo + sfumatura sul fondo */
+  const decoCss = THEMES.filter(t => t.dc || t.ground).map((t, i) => { const s = `html[data-theme=${t.id}] #tdeco`; return `
+  ${t.dc ? `${s}::before { content:'${t.dc}'; display:block; ${i % 2 ? 'right:4vw' : 'left:4vw'}; top:${8 + (i % 3) * 3}vh; font-size:4rem; opacity:.3; animation:tfloat ${6 + i % 4}s ease-in-out infinite; filter:drop-shadow(0 0 24px ${t.vars['--gold']}); }` : ''}
+  ${t.ground ? `${s}::after { display:block; left:0; right:0; bottom:0; height:12vh; background:linear-gradient(to top,${t.ground},transparent); }` : ''}`; }).join('');
 
   /* ---------- stile iniettato: decorazioni per tema, etichetta, annuncio ---------- */
   const css = document.createElement('style');
@@ -132,14 +186,19 @@
   @keyframes tup { from { transform:translateY(30px); opacity:0; } to { transform:none; opacity:1; } }
   @media (prefers-reduced-motion: reduce) { #tdeco *, #tdeco::before, #tdeco::after { animation:none !important; } }
   `;
+  css.textContent += decoCss + `
+  #tchip .sk { display:none; pointer-events:auto; cursor:pointer; font-size:.8rem; padding:3px 8px; border-radius:99px; background:rgba(var(--gold-rgb),.22); border:1px solid var(--line); }
+  #tchip.canskip .sk { display:inline; }
+  #tchip.off .sk { display:none; }`;
   document.head.appendChild(css);
 
   const deco = document.createElement('div'); deco.id = 'tdeco';
   const chip = document.createElement('div'); chip.id = 'tchip';
-  chip.innerHTML = '<span class="te"></span><span class="tn"></span><span class="tt"></span><span class="sm" title="Audio">🔊</span><i></i>';
+  chip.innerHTML = '<span class="te"></span><span class="tn"></span><span class="tt"></span><span class="sk" title="Salta questo tema">⏭️ Salta</span><span class="sm" title="Audio">🔊</span><i></i>';
   const sm = () => chip.querySelector('.sm');
   const syncSm = () => sm().textContent = (window.sfx && sfx.muted) ? '🔇' : '🔊';
-  chip.addEventListener('click', e => { if (e.target.closest('.sm')) { e.stopPropagation(); window.sfx && (sfx.toggle(), sfx.tap()); syncSm(); } }, true);
+  chip.addEventListener('click', e => { if (e.target.closest('.sk')) { e.stopPropagation(); chip.classList.remove('canskip'); fetch('/api/theme/skip', {method:'POST'}).then(poll); return; }
+    if (e.target.closest('.sm')) { e.stopPropagation(); window.sfx && (sfx.toggle(), sfx.tap()); syncSm(); } }, true);
   setTimeout(syncSm, 300);
   const mount = () => { document.body.appendChild(deco); document.body.appendChild(chip); };
   document.body ? mount() : addEventListener('DOMContentLoaded', mount);
@@ -319,12 +378,12 @@
   }
 
   /* ---------- sincronizzazione col server ---------- */
-  let seq = -1, left = 60, total = 60, sync = Date.now();
+  let seq = -1, left = 60, total = 60, skipAfter = 15, sync = Date.now();
   const gameOpen = () => { const g = document.getElementById('game'); return g && !g.classList.contains('hidden'); };
   async function poll() {
     try {
       const r = await (await fetch('/api/theme', {cache:'no-store'})).json();
-      sync = Date.now(); left = r.left; total = r.total; chip.classList.toggle('off', r.enabled === false);
+      sync = Date.now(); left = r.left; total = r.total; skipAfter = r.skip_after ?? 15; chip.classList.toggle('off', r.enabled === false);
       if (r.seq !== seq) {
         const t = THEMES.find(x => x.id === r.id) || THEMES[0], first = seq === -1; seq = r.seq;
         (first || RM || document.hidden || gameOpen()) ? apply(t) : splash(t, () => apply(t));
@@ -337,6 +396,7 @@
     const rem = Math.max(0, left - (Date.now() - sync)/1000), m = Math.floor(rem/60), s = Math.floor(rem%60);
     chip.querySelector('.tt').textContent = `${m}:${String(s).padStart(2,'0')}`;
     chip.querySelector('i').style.transform = `scaleX(${Math.min(1, rem/total)})`;
+    chip.classList.toggle('canskip', !chip.classList.contains('off') && total - rem >= skipAfter);
   }, 250);
 
   /* dalla dashboard (solo dal PC del server) un clic sul riquadro passa subito al tema successivo */

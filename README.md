@@ -35,11 +35,11 @@ La dashboard e tutte le funzioni di amministrazione (aggiungere pizze, azzerare 
 
 **Dashboard (PC)**
 - Classifica animata, **radar** di tutte le pizze sulle categorie, mappa di calore, "Sorpresa o delusione" (aspettativa vs realtà), chi ha votato, record di Pizza Ninja.
-- **Cerimonia di premiazione** 🏆: conto alla rovescia, rullo di tamburi, podio, fuochi d'artificio e **premi speciali** calcolati dai voti (più divisiva, affare della serata, giurato più severo/generoso, anime gemelle, rivali di palato…). Parte in contemporanea su tutti i dispositivi.
+- **Cerimonia di premiazione** 🏆: conto alla rovescia, rullo di tamburi, podio, fuochi d'artificio e **premi speciali** calcolati dai voti (più divisiva, affare della serata, giurato più severo/generoso, anime gemelle, rivali di palato…). Parte in contemporanea su tutti i dispositivi: finito il conto alla rovescia il resoconto **non si apre da solo**, ma compare in alto il pulsante 🏆 *Apri il resoconto*.
 - Gestione pizze (nome e prezzo), **avviso scorrevole** personalizzabile (compare sulla dashboard e sui telefoni), azzeramento voti, interruttore **temi on/off** e audio.
 - **Pagina Statistiche per smanettoni** 📊 (`/stats`): medie e σ per categoria, istogrammi, correlazioni tra categorie, prezzo vs punteggio, bias dei giurati, matrice giurati × pizze ed export CSV/JSON. Si apre a fine serata (link in fondo alla cerimonia) ed è sempre disponibile dal PC del server.
 
-**Temi** 🎨 — 20 temi (Gay Pride, Natale, Medievale, Matrix, Spazio, Tropicale, Halloween, Synthwave, Giappone, Far West, Abissi, Foresta incantata, Inferno, Tempesta pirata, Antico Egitto, Discoteca, Fumetti, Caramelle, Cinema Noir e la classica) che **ruotano ogni minuto in modo casuale**, uguali per tutti i dispositivi, con annuncio a schermo e senza ricaricare la pagina. Si possono disattivare dalla dashboard.
+**Temi** 🎨 — 60 temi (i 20 classici: Gay Pride, Natale, Matrix, Spazio, Halloween, Synthwave… più 40 pazzi: Vichinghi, Zombie, Vampiri, Robot, Dinosauri, Era Glaciale, Circo, Formula 1, Gladiatori, Cyberpunk, Steampunk, Safari, Jazz Club, Pigiama Party, Cucina della Nonna e altri) che **ruotano ogni minuto in modo casuale**, uguali per tutti i dispositivi, con annuncio a schermo e senza ricaricare la pagina. **Dopo 15 secondi** dall'inizio di un tema compare il tasto ⏭️ *Salta* (su ogni dispositivo) per passare subito al successivo. Si possono disattivare dalla dashboard.
 
 **Suoni** 🔊 — effetti sintetizzati con WebAudio (nessun file audio). Il browser li sblocca al primo tocco; si possono silenziare dall'etichetta in basso a sinistra o dalla dashboard.
 
@@ -77,6 +77,7 @@ data.json                 creato a runtime, non versionato
 | GET/POST | `/api/score` | record di Pizza Ninja |
 | GET/POST | `/api/reactions`, `/api/react` | reazioni emoji in diretta |
 | GET | `/api/theme` | tema corrente (cambia ogni 60 s) |
+| POST | `/api/theme/skip` | passa al tema successivo, ammesso solo dopo 15 s dall'inizio del tema |
 | GET | `/api/ceremony`, `/api/final`, `/api/stats`, `/api/export.csv` | cerimonia e dati finali: visibili solo a cerimonia avviata (o da localhost) |
 | POST | `/api/pizzas`, `/api/reset`, `/api/ceremony/start`, `/api/settings/themes` … | amministrazione, **solo localhost** |
 
