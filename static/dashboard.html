@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Sfida Pizze</title>
+<style>
+  :root { --ink:#fff4e6; --mut:#b9a392; --red:#ff4d2e; --gold:#ffb703; --glass:rgba(255,255,255,.06); --line:rgba(255,255,255,.12); }
+  * { box-sizing:border-box; }
+  html { background:var(--bg); }
+  body { margin:0; min-height:100vh; font-family:var(--font,system-ui,"Segoe UI",sans-serif); color:var(--ink); padding:24px 32px 56px; overflow-x:hidden;
+    background:var(--bg); }
+  .aurora { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .aurora i { position:absolute; width:70vmax; height:70vmax; border-radius:50%; filter:blur(90px); opacity:.5; }
+  .aurora i b { display:block; width:100%; height:100%; border-radius:50%; animation:drift 20s ease-in-out infinite alternate; }
+  .aurora i:nth-child(1) { top:-30vmax; right:-25vmax; } .aurora i:nth-child(1) b { background:radial-gradient(circle,var(--a1),transparent 65%); }
+  .aurora i:nth-child(2) { bottom:-35vmax; left:-30vmax; } .aurora i:nth-child(2) b { background:radial-gradient(circle,var(--a2),transparent 65%); animation-duration:25s; animation-delay:-6s; }
+  .aurora i:nth-child(3) { top:25vh; left:35vw; opacity:.3; } .aurora i:nth-child(3) b { background:radial-gradient(circle,var(--a3),transparent 65%); animation-duration:29s; animation-delay:-12s; }
+  @keyframes drift { to { transform:translate(12vmax,-8vmax) scale(1.25) rotate(40deg); } }
+  /* riflesso che segue il mouse */
+  .glass { position:relative; }
+  .glass::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .3s;
+    background:radial-gradient(320px circle at var(--mx,-999px) var(--my,-999px), rgba(var(--gold-rgb),.2), transparent 65%); }
+  .glass:hover::before { opacity:1; }
+  /* notifiche voto in diretta */
+  #feed { position:fixed; right:24px; bottom:24px; z-index:60; display:flex; flex-direction:column; gap:10px; align-items:flex-end; pointer-events:none; }
+  .note { display:flex; align-items:center; gap:12px; padding:14px 20px; border-radius:18px; font-weight:700; font-size:1.1rem; color:#fff;
+    background:linear-gradient(135deg,rgba(var(--gold-rgb),.9),rgba(var(--red-rgb),.92)); box-shadow:0 14px 40px rgba(var(--red-rgb),.45); animation:noteIn .6s cubic-bezier(.2,1.4,.3,1) both, noteOut .5s 4.5s forwards; }
+  .note .e { font-size:1.8rem; }
+  .note small { display:block; font-weight:500; opacity:.9; font-size:.8rem; }
+  @keyframes noteIn { from { transform:translateX(120%) scale(.8); opacity:0; } }
+  @keyframes noteOut { to { transform:translateX(120%); opacity:0; } }
+  .ks.pulse, .score.pulse { animation:pulse .7s; }
+  @keyframes pulse { 40% { transform:scale(1.25); text-shadow:0 0 30px currentColor; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+  #rain { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  #rain span { position:absolute; top:-60px; opacity:.1; animation:fall linear infinite; }
+  @keyframes fall { to { transform:translateY(115vh) rotate(360deg); } }
+  #fx { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:50; }
+  .wrap { position:relative; z-index:1; max-width:1500px; margin:0 auto; }
+  header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:22px; }
+  h1 { margin:0; font-size:clamp(1.8rem,3.4vw,3rem); font-weight:900; letter-spacing:-.02em; display:flex; align-items:center; gap:14px; }
+  h1 .logo { display:inline-block; animation:spin 8s linear infinite; filter:drop-shadow(0 6px 20px rgba(var(--red-rgb),.7)); }
+  h1 .t { background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .join { background:var(--glass); border:1px solid var(--line); border-radius:16px; padding:10px 18px; backdrop-filter:blur(12px); }
+  .join small { color:var(--mut); display:block; font-size:.8rem; }
+  .join b { font-size:1.5rem; color:var(--gold); }
+  .glass { background:var(--glass); border:1px solid var(--line); border-radius:22px; padding:22px; backdrop-filter:blur(14px); box-shadow:0 14px 40px rgba(0,0,0,.3); margin-bottom:20px; }
+  h2 { margin:0 0 16px; font-size:.9rem; color:var(--mut); font-weight:700; text-transform:uppercase; letter-spacing:.12em; }
+  .grid { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:20px; align-items:start; }
+  @media (max-width:1050px) { .grid { grid-template-columns:1fr; } }
+
+  /* re della classifica */
+  .king { display:none; align-items:center; gap:18px; margin-bottom:20px; padding:18px 24px; border-radius:22px; border:1px solid rgba(var(--gold-rgb),.5);
+    background:linear-gradient(120deg,rgba(var(--gold-rgb),.22),rgba(var(--red-rgb),.18)); box-shadow:0 0 50px rgba(var(--gold-rgb),.25); position:relative; overflow:hidden; }
+  .king.on { display:flex; }
+  .king::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.18) 50%,transparent 65%); transform:translateX(-120%); animation:shine 4s infinite; }
+  @keyframes shine { 40%,100% { transform:translateX(120%); } }
+  .king .crown { font-size:3.2rem; animation:float 2.4s ease-in-out infinite; }
+  @keyframes float { 50% { transform:translateY(-8px) rotate(-6deg); } }
+  .king small { color:var(--gold); text-transform:uppercase; letter-spacing:.14em; font-weight:700; font-size:.75rem; }
+  .king .kn { font-size:clamp(1.3rem,2.4vw,2rem); font-weight:900; line-height:1.1; }
+  .king .ks { margin-left:auto; font-size:3rem; font-weight:900; font-variant-numeric:tabular-nums; }
+
+  /* classifica */
+  .pizza { display:grid; grid-template-columns:54px 1fr auto; gap:6px 16px; align-items:center; padding:16px 12px; border-radius:16px; transition:transform .7s cubic-bezier(.2,.9,.3,1.05), background .5s; position:relative; }
+  .pizza + .pizza { margin-top:4px; }
+  .pizza.first { background:linear-gradient(90deg,rgba(var(--gold-rgb),.14),transparent); }
+  .pizza.flash { animation:flash 1.4s; }
+  @keyframes flash { 0%,60% { background:rgba(var(--gold-rgb),.4); } }
+  .rank { font-size:2rem; text-align:center; font-weight:900; color:var(--mut); }
+  .pname { font-size:1.35rem; font-weight:800; line-height:1.15; }
+  .pname small { display:block; font-weight:500; color:var(--mut); font-size:.85rem; margin-top:3px; }
+  .score { font-size:2.3rem; font-weight:900; font-variant-numeric:tabular-nums; text-align:right; }
+  .score small { font-size:.95rem; color:var(--mut); font-weight:600; }
+  .total-bar { grid-column:2 / 4; height:12px; background:rgba(255,255,255,.09); border-radius:99px; overflow:hidden; }
+  .total-bar i { display:block; height:100%; width:0; border-radius:99px; transition:width 1s cubic-bezier(.2,.9,.3,1); box-shadow:0 0 16px currentColor; }
+  .cats { grid-column:2 / 4; display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:6px 16px; margin-top:6px; }
+  .cat { font-size:.78rem; }
+  .cat .l { display:flex; justify-content:space-between; color:var(--mut); gap:6px; }
+  .cat .l b { color:var(--ink); }
+  .cat .b { height:5px; background:rgba(255,255,255,.09); border-radius:99px; margin-top:3px; overflow:hidden; }
+  .cat .b i { display:block; height:100%; width:0; background:var(--gold); border-radius:99px; transition:width 1s cubic-bezier(.2,.9,.3,1); }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+
+  /* radar */
+  #radar { width:100%; height:auto; display:block; overflow:visible; }
+  #radar .ring { fill:none; stroke:rgba(255,255,255,.12); }
+  #radar .axis { stroke:rgba(255,255,255,.14); }
+  #radar .rl { fill:var(--mut); font-size:10px; }
+  #radar .al { fill:var(--ink); font-size:13px; font-weight:700; }
+  #radar .series polygon { transition:opacity .3s, stroke-width .3s, fill-opacity .3s; stroke-linejoin:round; }
+  #radar .series { transition:opacity .3s; }
+  #radar.hov .series:not(.hot) { opacity:.12; }
+  #radar .series.hot polygon { stroke-width:4; fill-opacity:.3; }
+  #radar .series.off { display:none; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:99px; border:1px solid var(--line); background:rgba(255,255,255,.05); font-size:.85rem; cursor:pointer; user-select:none; transition:.2s; }
+  .chip:hover { background:rgba(255,255,255,.12); }
+  .chip.off { opacity:.35; text-decoration:line-through; }
+  .chip i { width:12px; height:12px; border-radius:50%; display:block; }
+
+  /* tabella */
+  table { width:100%; border-collapse:separate; border-spacing:4px; font-size:.95rem; }
+  th { color:var(--mut); font-weight:600; font-size:.75rem; padding:4px; text-align:center; }
+  td { text-align:center; padding:10px 6px; border-radius:10px; font-variant-numeric:tabular-nums; font-weight:600; }
+  td:first-child, th:first-child { text-align:left; background:none; padding-left:4px; font-weight:700; }
+  td.best { box-shadow:inset 0 0 0 2px var(--gold); }
+
+  .voter { display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line); }
+  .voter:first-of-type { border-top:0; }
+  .voter span:last-child { color:var(--mut); }
+  .add { display:flex; gap:8px; }
+  input[type=text] { flex:1; min-width:0; font:inherit; padding:11px 13px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--ink); outline:none; }
+  input[type=text]:focus { border-color:var(--gold); }
+  button { font:inherit; font-weight:700; border:0; border-radius:12px; padding:11px 18px; background:linear-gradient(135deg,var(--gold),var(--red)); color:#fff; cursor:pointer; }
+  button.s { background:none; color:var(--mut); padding:2px 8px; font-weight:400; }
+  button.danger { background:none; border:1px solid var(--line); color:var(--mut); width:100%; }
+  button.danger:hover { color:#fff; border-color:var(--red); }
+  .plist div { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.95rem; }
+  .plist div:first-child { border-top:0; }
+  .empty { color:var(--mut); padding:24px 0; text-align:center; }
+  details summary { cursor:pointer; color:var(--mut); font-weight:700; text-transform:uppercase; letter-spacing:.12em; font-size:.9rem; }
+
+  .big { position:fixed; bottom:-120px; z-index:40; pointer-events:none; text-align:center; animation:bigrise var(--d,6s) ease-in forwards; }
+  .big .e { font-size:clamp(3rem,6vw,6rem); display:block; filter:drop-shadow(0 8px 24px rgba(var(--red-rgb),.6)); }
+  .big small { display:inline-block; font-size:1rem; font-weight:800; background:rgba(0,0,0,.55); border:1px solid var(--line); border-radius:99px; padding:3px 14px; margin-top:-4px; }
+  @keyframes bigrise { 0% { transform:translate(0,0) scale(.5) rotate(-10deg); opacity:0; } 8% { opacity:1; } 50% { transform:translate(var(--w,40px),-55vh) scale(1.1) rotate(8deg); }
+    100% { transform:translate(calc(var(--w,40px) * -1),-120vh) scale(.9) rotate(-6deg); opacity:.0; } }
+  .ticker { overflow:hidden; white-space:nowrap; margin:-6px 0 20px; padding:10px 0; border-radius:14px; background:linear-gradient(90deg,rgba(var(--gold-rgb),.14),rgba(var(--red-rgb),.12)); border:1px solid rgba(var(--gold-rgb),.3); }
+  .ticker span { display:inline-block; padding-left:100%; font-weight:800; font-size:1.05rem; animation:tick 26s linear infinite; }
+  .ticker b { color:var(--gold); }
+  @keyframes tick { to { transform:translateX(-100%); } }
+  .hbtn { padding:12px 16px; font-size:.95rem; }
+  .hbtn.sec { background:var(--glass); border:1px solid var(--line); color:var(--ink); }
+  .sr { padding:10px 0; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; }
+  .sr:first-child { border-top:0; }
+  .sr .sn { font-weight:700; }
+  .sr .sd { font-weight:900; text-align:right; font-variant-numeric:tabular-nums; }
+  .sr .sd small { font-weight:500; color:var(--mut); }
+  .sr .sd.up { color:#7bd88f; } .sr .sd.dn { color:#ff7a7a; }
+  .sr .sb { grid-column:1 / 3; }
+  .sr .sb i { display:block; height:7px; border-radius:99px; margin:2px 0; transition:width 1s cubic-bezier(.2,.9,.3,1); }
+  .sr .sb i.e { background:transparent; border:1px dashed var(--mut); height:7px; box-sizing:border-box; }
+  .sleg { color:var(--mut); font-size:.78rem; margin-top:8px; }
+</style>
+<script src="/assets/sfx.js"></script>
+<script src="/assets/theme.js" defer></script>
+<script src="/assets/ceremony.js" defer></script>
+<script src="/assets/share.js" defer></script>
+</head>
+<body>
+<div class="aurora"><i><b></b></i><i><b></b></i><i><b></b></i></div>
+<div id="rain"></div>
+<div id="feed"></div>
+<canvas id="fx"></canvas>
+<div class="wrap">
+<header>
+  <h1><span class="logo">🍕</span><span class="t">Sfida delle pizze surgelate</span></h1>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="hbtn" id="cerBtn">🏆 Proclama il vincitore</button>
+    <button class="hbtn sec" id="themeBtn">🎨 Temi: …</button>
+    <button class="hbtn sec" id="statsBtn">📊 Statistiche</button>
+    <button class="hbtn sec" id="shareBtn">📣 Condividi</button>
+    <button class="hbtn sec" id="sndBtn">🔊 Audio</button>
+    <div class="join"><small>Votate da telefono su</small><b id="url">…</b></div>
+  </div>
+</header>
+
+<div class="ticker" id="ticker" style="display:none"><span id="tickertxt"></span></div>
+
+<div class="king" id="king"><div class="crown">👑</div><div><small>In testa alla classifica</small><div class="kn" id="kn"></div></div><div class="ks" id="ks"></div></div>
+
+<div class="grid">
+  <div>
+    <div class="glass"><h2>Classifica</h2><div id="board"></div></div>
+  </div>
+  <div>
+    <div class="glass"><h2>Radar delle pizze <span style="text-transform:none;letter-spacing:0">· tocca un nome per nasconderlo</span></h2>
+      <svg id="radar" viewBox="-70 -30 700 620"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="glass"><h2>Chi ha votato (<span id="nv">0</span>)</h2><div id="voters"></div><div class="hint" id="betcount" style="margin-top:10px;color:var(--mut)"></div></div>
+    <div class="glass"><h2>🎭 Sorpresa o delusione</h2><div id="surprise"></div></div>
+    <div class="glass"><h2>🎮 Pizza Ninja · record</h2><div id="ninja"></div></div>
+  </div>
+</div>
+
+<div class="glass"><h2>Mappa di calore <span style="text-transform:none;letter-spacing:0">· cornice oro = migliore della categoria</span></h2><div id="matrix"></div></div>
+
+<div class="glass"><details><summary>⚙️ Gestione pizze</summary>
+  <div class="add" style="margin-top:16px"><input type="text" id="newp" placeholder="Nome pizza (es. Margherita)"><input type="text" id="newprice" placeholder="€" inputmode="decimal" style="flex:0 0 80px"><button id="addbtn">Aggiungi</button></div>
+  <div class="plist" id="plist" style="margin-top:10px"></div>
+  <div class="add" style="margin-top:14px"><input type="text" id="noticein" maxlength="300" placeholder="Avviso scorrevole (vuoto = nessun avviso)"><button id="noticebtn">Salva avviso</button></div>
+  <div style="height:14px"></div><button class="danger" id="reset">Azzera tutti i voti</button>
+</details></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = v => v == null ? '–' : v.toFixed(2).replace(/\.?0+$/, '');
+const fmt1 = v => v == null ? '–' : v.toFixed(1);
+const eur = v => '€ ' + v.toFixed(2).replace('.', ',');
+const medals = ['🥇','🥈','🥉'];
+const COLORS = ['#ffb703','#ff4d2e','#4cc9f0','#7bd88f','#c77dff','#ff7eb6','#e9ff70','#ff9f45'];
+const colorOf = {};   // id -> colore stabile
+const hidden = new Set();
+
+// sfondo
+(() => { const r = $('rain'); for (let i=0;i<16;i++) { const s=document.createElement('span'); s.textContent=['🍕','🧀','🍅','🌶️'][i%4];
+  s.style.left=Math.random()*100+'vw'; s.style.fontSize=(26+Math.random()*40)+'px'; s.style.animationDuration=(16+Math.random()*20)+'s'; s.style.animationDelay=(-Math.random()*34)+'s'; r.appendChild(s); } })();
+
+// riflesso mouse
+addEventListener('pointermove', e => { const g = e.target.closest && e.target.closest('.glass'); if (!g) return; const r = g.getBoundingClientRect();
+  g.style.setProperty('--mx', (e.clientX - r.left) + 'px'); g.style.setProperty('--my', (e.clientY - r.top) + 'px'); }, {passive:true});
+
+// notifica "X ha votato" quando arrivano voti nuovi
+const lastCount = {}; 
+function feed(voters) {
+  for (const v of voters) {
+    const prev = lastCount[v.name];
+    if (!firstLoad && (prev == null || v.count > prev)) {
+      const n = document.createElement('div'); n.className = 'note';
+      n.innerHTML = `<span class="e">${prev == null ? '👋' : '🗳️'}</span><div>${esc(v.name)}<small>${prev == null ? 'è entrato in gara' : 'ha appena votato'} · ${v.count} pizz${v.count===1?'a':'e'}</small></div>`;
+      $('feed').appendChild(n); setTimeout(() => n.remove(), 5200);
+      confetti(innerWidth - 150, innerHeight - 100, 40); window.sfx && sfx.ding();
+    }
+    lastCount[v.name] = v.count;
+  }
+}
+
+// coriandoli
+const fx = $('fx'), cx = fx.getContext('2d'); let parts = [], raf = 0; const dpr = devicePixelRatio || 1;
+function resize() { fx.width = innerWidth*dpr; fx.height = innerHeight*dpr; } addEventListener('resize', resize); resize();
+function confetti(x, y, n = 120) {
+  for (let i=0;i<n;i++) { const a = -Math.PI/2 + (Math.random()-.5)*2.4, v = 8+Math.random()*14;
+    parts.push({x:x*dpr,y:y*dpr,vx:Math.cos(a)*v*dpr,vy:Math.sin(a)*v*dpr,s:(6+Math.random()*8)*dpr,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:(window.THEME && THEME.confetti || COLORS)[i%(window.THEME && THEME.confetti || COLORS).length],life:0}); }
+  if (!raf) raf = requestAnimationFrame(tick);
+}
+function tick() {
+  cx.clearRect(0,0,fx.width,fx.height); parts = parts.filter(p => p.life < 130);
+  for (const p of parts) { p.life++; p.vy += .35*dpr; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.globalAlpha = Math.min(1,(130-p.life)/30); cx.fillStyle = p.c; cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); cx.restore(); }
+  raf = parts.length ? requestAnimationFrame(tick) : 0;
+}
+
+// numeri che scorrono
+function countTo(el, to, dec = 1) {
+  if (to == null) { el.textContent = '–'; el._v = null; return; }
+  const from = el._v ?? 0; el._v = to; cancelAnimationFrame(el._r);
+  const t0 = performance.now(), dur = 900;
+  const step = t => { const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3); el.textContent = (from+(to-from)*e).toFixed(dec); if (k<1) el._r = requestAnimationFrame(step); };
+  el._r = requestAnimationFrame(step);
+}
+
+// ---------- classifica con animazione di riordino (FLIP)
+const nodes = new Map(); let leader = null, firstLoad = true;
+function renderBoard(r) {
+  const board = $('board'), cats = r.categories;
+  if (!r.pizzas.length) { board.innerHTML = '<div class="empty">Aggiungi le pizze in gara da “Gestione pizze”.</div>'; nodes.clear(); return; }
+  if (!nodes.size) board.innerHTML = '';
+  const seen = new Set();
+  for (const p of r.pizzas) {
+    seen.add(p.id);
+    let el = nodes.get(p.id);
+    if (!el) {
+      el = document.createElement('div'); el.className = 'pizza';
+      el.innerHTML = `<div class="rank"></div><div class="pname"><span class="nm"></span><small></small></div><div class="score"><span class="sv">0</span><small>/10</small></div>
+        <div class="total-bar"><i></i></div>
+        <div class="cats">${cats.map(c => `<div class="cat" data-c="${c.id}"><div class="l"><span>${c.icon} ${c.label}</span><b></b></div><div class="b"><i></i></div></div>`).join('')}</div>`;
+      nodes.set(p.id, el); board.appendChild(el);
+    }
+    const col = colorOf[p.id];
+    el.querySelector('.nm').innerHTML = `<span class="dot" style="background:${col}"></span>${esc(p.name)}`;
+    el.querySelector('.pname small').textContent = `${p.n} vot${p.n===1?'o':'i'}${p.price ? ' · ' + eur(p.price) : ''}`;
+    countTo(el.querySelector('.sv'), p.total);
+    const bar = el.querySelector('.total-bar i'); bar.style.background = `linear-gradient(90deg,${col}99,${col})`; bar.style.color = col; bar.style.width = (p.total||0)*10 + '%';
+    for (const c of cats) { const ce = el.querySelector(`[data-c="${c.id}"]`); ce.querySelector('b').textContent = fmt(p.cats[c.id]); ce.querySelector('.b i').style.width = (p.cats[c.id]||0)*10 + '%'; }
+  }
+  for (const [id, el] of nodes) if (!seen.has(id)) { el.remove(); nodes.delete(id); }
+  // FLIP
+  const before = new Map([...nodes].map(([id, el]) => [id, el.getBoundingClientRect().top]));
+  r.pizzas.forEach((p, i) => { const el = nodes.get(p.id); board.appendChild(el);
+    el.classList.toggle('first', i === 0 && p.total != null);
+    el.querySelector('.rank').textContent = p.total != null && i < 3 ? medals[i] : i + 1; });
+  for (const [id, el] of nodes) {
+    const d = before.get(id) - el.getBoundingClientRect().top;
+    if (d) { el.style.transition = 'none'; el.style.transform = `translateY(${d}px)`; requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = ''; el.style.transform = ''; })); }
+  }
+  // re
+  const top = r.pizzas[0];
+  const king = $('king');
+  if (top && top.total != null) {
+    king.classList.add('on'); $('kn').textContent = top.name; countTo($('ks'), top.total); $('ks').style.color = colorOf[top.id];
+    if (leader && leader !== top.id && !firstLoad) { const el = nodes.get(top.id); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); confetti(innerWidth*.3, innerHeight*.6); confetti(innerWidth*.7, innerHeight*.6); window.sfx && sfx.record(); }
+    leader = top.id;
+  } else king.classList.remove('on');
+}
+
+// ---------- radar
+const SVGNS = 'http://www.w3.org/2000/svg', R = 215, CXY = 280;
+const radarCur = {};   // id -> valori correnti (per animazione)
+let radarCats = null;
+const pt = (i, n, v) => { const a = -Math.PI/2 + i*2*Math.PI/n; return [CXY + Math.cos(a)*R*v/10, CXY + Math.sin(a)*R*v/10]; };
+const poly = (vals) => vals.map((v,i) => pt(i, vals.length, v).map(x => x.toFixed(1)).join(',')).join(' ');
+function mk(tag, attrs = {}, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+function buildRadarFrame(cats) {
+  const svg = $('radar'); svg.innerHTML = ''; radarCats = cats.map(c => c.id).join();
+  const n = cats.length;
+  for (const lv of [2,4,6,8,10]) {
+    mk('polygon', {class:'ring', points: poly(Array(n).fill(lv))}, svg);
+    const [x,y] = pt(0, n, lv); const t = mk('text', {class:'rl', x:x+4, y:y+3}, svg); t.textContent = lv;
+  }
+  cats.forEach((c, i) => {
+    const [x2,y2] = pt(i, n, 10); mk('line', {class:'axis', x1:CXY, y1:CXY, x2, y2}, svg);
+    const [lx,ly] = pt(i, n, 11.6); const dx = lx - CXY;
+    const t = mk('text', {class:'al', x:lx, y:ly+4, 'text-anchor': Math.abs(dx) < 12 ? 'middle' : dx > 0 ? 'start' : 'end'}, svg);
+    t.textContent = `${c.icon} ${c.label}`;
+  });
+  mk('g', {id:'series'}, svg);
+}
+
+function renderRadar(r) {
+  if (radarCats !== r.categories.map(c => c.id).join()) buildRadarFrame(r.categories);
+  const g = $('series'), n = r.categories.length, ids = new Set(r.pizzas.map(p => p.id));
+  for (const el of [...g.children]) if (!ids.has(el.dataset.id)) el.remove();
+  for (const p of r.pizzas) {
+    let s = g.querySelector(`[data-id="${p.id}"]`);
+    const col = colorOf[p.id];
+    if (!s) {
+      s = mk('g', {class:'series', 'data-id':p.id}, g);
+      mk('polygon', {fill:col, 'fill-opacity':.14, stroke:col, 'stroke-width':2.5}, s);
+      radarCur[p.id] = Array(n).fill(0);
+    }
+    s.classList.toggle('off', hidden.has(p.id));
+    s._target = r.categories.map(c => p.cats[c.id] ?? 0);
+    s._p = p;
+  }
+  const sig = JSON.stringify([r.pizzas.map(p => [p.id, p.name, ...r.categories.map(c => p.cats[c.id])]), [...hidden]]);
+  if (sig === renderRadar.sig) return;
+  renderRadar.sig = sig;
+  // animazione verso i valori reali
+  const t0 = performance.now(), from = {}; for (const id in radarCur) from[id] = [...radarCur[id]];
+  const step = t => {
+    const k = Math.min(1,(t-t0)/900), e = 1-Math.pow(1-k,3);
+    for (const s of g.children) { const id = s.dataset.id, cur = from[id].map((v,i) => v + (s._target[i]-v)*e); radarCur[id] = cur;
+      s.querySelector('polygon').setAttribute('points', poly(cur));
+      [...s.querySelectorAll('circle')].forEach(c => c.remove());
+      cur.forEach((v,i) => { if (v > 0) { const [x,y] = pt(i,n,v); mk('circle', {cx:x, cy:y, r:4.2, fill:colorOf[id]}, s); } }); }
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+
+  const lg = $('legend');
+  lg.innerHTML = r.pizzas.map(p => `<span class="chip ${hidden.has(p.id)?'off':''}" data-id="${p.id}"><i style="background:${colorOf[p.id]}"></i>${esc(p.name)}</span>`).join('');
+}
+$('legend').addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; const id = c.dataset.id;
+  hidden.has(id) ? hidden.delete(id) : hidden.add(id); c.classList.toggle('off'); $('series').querySelector(`[data-id="${id}"]`)?.classList.toggle('off', hidden.has(id)); });
+$('legend').addEventListener('mouseover', e => { const c = e.target.closest('.chip'); if (!c) return; $('radar').classList.add('hov'); $('series').querySelector(`[data-id="${c.dataset.id}"]`)?.classList.add('hot'); });
+$('legend').addEventListener('mouseout', () => { $('radar').classList.remove('hov'); $('series').querySelectorAll('.hot').forEach(e => e.classList.remove('hot')); });
+
+// ---------- tabella calore
+function renderMatrix(r) {
+  const cats = r.categories, best = {};
+  for (const c of cats) best[c.id] = Math.max(...r.pizzas.map(p => p.cats[c.id] ?? -1));
+  $('matrix').innerHTML = r.pizzas.length ? `<table><tr><th></th>${cats.map(c=>`<th>${c.icon}<br>${c.label}</th>`).join('')}<th>Totale</th></tr>
+    ${r.pizzas.map(p => `<tr><td><span class="dot" style="background:${colorOf[p.id]}"></span>${esc(p.name)}</td>${cats.map(c => { const v = p.cats[c.id];
+      return `<td class="${v!=null && v===best[c.id] ? 'best':''}" style="background:${v==null?'rgba(255,255,255,.04)':`hsla(${(v-1)/9*125},80%,50%,.38)`}">${fmt(v)}</td>`; }).join('')}
+      <td style="background:${p.total==null?'rgba(255,255,255,.04)':`hsla(${(p.total-1)/9*125},80%,50%,.55)`};font-weight:900">${fmt1(p.total)}</td></tr>`).join('')}</table>` : '';
+}
+
+async function load() {
+  let r;
+  try { r = await (await fetch('/api/results')).json(); } catch { return; }
+  r.pizzas.forEach(p => { if (!colorOf[p.id]) colorOf[p.id] = COLORS[Object.keys(colorOf).length % COLORS.length]; });
+  renderBoard(r); renderRadar(r); renderMatrix(r);
+  $('ninja').innerHTML = (r.scores || []).length ? r.scores.map((s, i) => `<div class="voter"><span>${medals[i] || (i+1)+'.'} ${esc(s.name)}</span><b style="color:var(--gold)">${s.best}</b></div>`).join('') : '<div class="empty">Nessuno ha ancora giocato.</div>';
+  window.__last = r; renderNotice(r.notice || ''); renderSurprise(r); $('betcount').textContent = r.bets ? '🔮 Pronostici fatti: ' + r.bets : '';
+  feed(r.voters);
+  $('nv').textContent = r.voters.length;
+  $('voters').innerHTML = r.voters.length ? r.voters.map(v => `<div class="voter"><span>${esc(v.name)}</span><span>${'🍕'.repeat(Math.min(v.count, 8))} ${v.count}/${r.npizzas}</span></div>`).join('') : '<div class="empty">Nessuno ha ancora votato.</div>';
+  const pl = $('plist'), sig = JSON.stringify(r.pizzas.map(p => p.id + p.price));
+  if (pl.dataset.sig !== sig) {
+    pl.dataset.sig = sig;
+    pl.innerHTML = r.pizzas.map(p => `<div><span>${esc(p.name)}${p.price ? ' <small style="color:var(--mut)">' + eur(p.price) + '</small>' : ''}</span><button class="s" data-id="${p.id}" title="Rimuovi">✕</button></div>`).join('');
+  }
+  firstLoad = false;
+}
+
+$('plist').onclick = async e => {
+  const id = e.target.dataset?.id;
+  if (id && confirm('Rimuovere questa pizza e i suoi voti?')) { await fetch('/api/pizzas/' + id, {method:'DELETE'}); load(); }
+};
+async function add() {
+  const name = $('newp').value.trim(); if (!name) return;
+  await fetch('/api/pizzas', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, price: parseFloat($('newprice').value.replace(',', '.')) || null})});
+  $('newp').value = ''; $('newprice').value = ''; load();
+}
+$('addbtn').onclick = add;
+$('newp').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+$('reset').onclick = async () => { if (confirm('Cancellare TUTTI i voti?')) { await fetch('/api/reset', {method:'POST'}); load(); } };
+
+
+// reazioni dai telefoni
+let lastReact = null;
+function bigEmoji(e, who) {
+  const el = document.createElement('div'); el.className = 'big';
+  el.style.left = (4 + Math.random()*88) + 'vw'; el.style.setProperty('--w', (Math.random()*160-80) + 'px'); el.style.setProperty('--d', (5 + Math.random()*2.5) + 's');
+  el.innerHTML = '<span class="e"></span><small></small>'; el.firstChild.textContent = e; el.lastChild.textContent = who;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 8000);
+}
+async function pollReact() {
+  try {
+    const r = await (await fetch('/api/reactions?since=' + (lastReact ?? 0))).json();
+    if (lastReact !== null) r.items.slice(-25).forEach((i, k) => setTimeout(() => bigEmoji(i.emoji, i.name), k*120));
+    lastReact = r.last;
+  } catch {}
+}
+setInterval(pollReact, 1000); pollReact();
+
+function renderNotice(txt) {
+  const t = $('ticker'), s = $('tickertxt');
+  if (!window.__nfilled && document.activeElement !== $('noticein')) { $('noticein').value = txt; window.__nfilled = true; }
+  if (s.dataset.t === txt) return; s.dataset.t = txt;
+  t.style.display = txt ? '' : 'none';
+  const one = `<b>📢 AVVISO:</b> ${esc(txt)}`; s.innerHTML = one + ' &nbsp;&nbsp;·&nbsp;&nbsp; ' + one;
+}
+$('noticebtn').onclick = async () => { await fetch('/api/settings/notice', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: $('noticein').value})}); load(); };
+$('statsBtn').onclick = () => window.open('/stats', '_blank');
+function renderSurprise(r) {
+  const rows = r.pizzas.filter(p => p.delta != null).sort((a, b) => a.delta - b.delta);
+  $('surprise').innerHTML = rows.length ? rows.map(p => { const up = p.delta >= 0;
+    return `<div class="sr"><div class="sn"><span class="dot" style="background:${colorOf[p.id]}"></span>${esc(p.name)}</div><div class="sd ${up ? 'up' : 'dn'}">${up ? '▲' : '▼'} ${Math.abs(p.delta).toFixed(1)} <small>${up ? 'sorpresa' : 'delusione'}</small></div>
+      <div class="sb"><i class="e" style="width:${p.expect * 10}%"></i><i style="width:${p.real * 10}%;background:${colorOf[p.id]}"></i></div></div>`; }).join('') + '<div class="sleg">tratteggiato = aspettativa · pieno = realtà</div>'
+    : '<div class="empty">Servono voti con “Aspettativa”.</div>';
+}
+
+// pulsanti in testata: cerimonia, temi, audio
+let themeOn = true;
+async function syncHdr() {
+  try { const t = await (await fetch('/api/theme')).json(); themeOn = t.enabled !== false; $('themeBtn').textContent = '🎨 Temi: ' + (themeOn ? 'ON' : 'OFF'); } catch {}
+  $('cerBtn').textContent = (window.CEREMONY && CEREMONY.active) ? '⏹ Chiudi la cerimonia' : '🏆 Proclama il vincitore';
+  $('sndBtn').textContent = (window.sfx && sfx.muted) ? '🔇 Audio off' : '🔊 Audio on';
+}
+$('themeBtn').onclick = async () => { await fetch('/api/settings/themes', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({enabled: !themeOn})}); syncHdr(); };
+$('sndBtn').onclick = () => { if (window.sfx) { sfx.toggle(); sfx.tap(); } syncHdr(); };
+$('cerBtn').onclick = async () => {
+  if (window.CEREMONY && CEREMONY.active) await fetch('/api/ceremony/stop', {method:'POST'});
+  else if (confirm('Avviare la cerimonia di premiazione su tutti gli schermi? I pronostici verranno chiusi.')) await fetch('/api/ceremony/start', {method:'POST'});
+  setTimeout(syncHdr, 1800);
+};
+$('shareBtn').onclick = () => {
+  const r = window.__last; if (!r || !window.shareSheet) return;
+  const top = r.pizzas.filter(p => p.total != null).slice(0, 3), med = ['🥇', '🥈', '🥉'], f1 = v => v.toFixed(1).replace('.', ',');
+  if (!top.length) return alert('Nessun voto ancora: niente da condividere!');
+  const text = '🍕 Sfida delle pizze surgelate — classifica provvisoria\n' + top.map((p, i) => `${med[i]} ${p.name} (${f1(p.total)})`).join('\n') + '\n#SfidaPizze';
+  shareSheet({text, card: {title: 'Classifica', subtitle: 'Sfida delle pizze surgelate · provvisoria', rows: top.map((p, i) => ({icon: med[i], label: p.name, value: f1(p.total)}))}});
+};
+syncHdr(); setInterval(syncHdr, 2500);
+
+fetch('/api/info').then(r => r.json()).then(i => $('url').textContent = `http://${i.ip}:${i.port}`);
+load(); setInterval(load, 2500);
+</script>
+</body>
+</html>

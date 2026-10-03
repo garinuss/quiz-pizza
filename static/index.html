@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14090a">
+<title>Sfida Pizze</title>
+<style>
+  @property --deg { syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  :root { --ink:#fff4e6; --mut:#b9a392; --red:#ff4d2e; --gold:#ffb703; --glass:rgba(255,255,255,.07); --line:rgba(255,255,255,.12); --tx:0; --ty:0; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html { background:var(--bg); }
+  body { margin:0; min-height:100vh; font-family:var(--font,system-ui,-apple-system,"Segoe UI",sans-serif); color:var(--ink); padding:0 16px calc(48px + env(safe-area-inset-bottom)); background:var(--bg); }
+  html, body { overflow-x:clip; }
+
+  /* aurora + parallax giroscopio */
+  .aurora { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .aurora i { position:absolute; width:70vmax; height:70vmax; border-radius:50%; filter:blur(80px); opacity:.5; will-change:transform;
+    transform:translate(calc(var(--tx)*30px), calc(var(--ty)*30px)); }
+  .aurora i b { display:block; width:100%; height:100%; border-radius:50%; animation:drift 18s ease-in-out infinite alternate; }
+  .aurora i:nth-child(1) { top:-30vmax; right:-25vmax; } .aurora i:nth-child(1) b { background:radial-gradient(circle,var(--a1),transparent 65%); }
+  .aurora i:nth-child(2) { bottom:-35vmax; left:-30vmax; } .aurora i:nth-child(2) b { background:radial-gradient(circle,var(--a2),transparent 65%); animation-duration:23s; animation-delay:-6s; }
+  .aurora i:nth-child(3) { top:30vh; left:20vw; opacity:.3; } .aurora i:nth-child(3) b { background:radial-gradient(circle,var(--a3),transparent 65%); animation-duration:27s; animation-delay:-12s; }
+  @keyframes drift { to { transform:translate(12vmax,-8vmax) scale(1.25) rotate(40deg); } }
+  #rain { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  #rain span { position:absolute; top:-60px; opacity:.13; animation:fall linear infinite; }
+  @keyframes fall { to { transform:translateY(115vh) rotate(360deg); } }
+
+  main { position:relative; z-index:1; max-width:520px; margin:0 auto; }
+  section { animation:in .5s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes in { from { opacity:0; transform:translateY(18px) scale(.98); } }
+  h1 { font-size:2rem; line-height:1.1; margin:28px 0 6px; font-weight:900; letter-spacing:-.02em;
+    background:linear-gradient(90deg,var(--gold),var(--red),var(--gold)) 0 0/200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:slide 5s linear infinite; }
+  @keyframes slide { to { background-position:-200% 0; } }
+  p.sub { color:var(--mut); margin:0 0 20px; }
+
+  /* hero con ingredienti in orbita */
+  .orbit { position:relative; width:170px; height:170px; margin:36px auto 6px; }
+  .orbit .pz0 { position:absolute; inset:0; display:grid; place-items:center; font-size:5.5rem; animation:spin 9s linear infinite; filter:drop-shadow(0 10px 30px rgba(var(--red-rgb),.7)); }
+  .orbit .o { position:absolute; inset:0; animation:spin 6s linear infinite; }
+  .orbit .o span { position:absolute; left:50%; top:-6px; font-size:1.7rem; margin-left:-14px; animation:spin 6s linear infinite reverse; }
+  .orbit .o:nth-of-type(2) { animation-duration:9s; transform:rotate(120deg); } .orbit .o:nth-of-type(2) span { animation-duration:9s; }
+  .orbit .o:nth-of-type(3) { animation-duration:12s; animation-direction:reverse; } .orbit .o:nth-of-type(3) span { animation-duration:12s; animation-direction:normal; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* vetro con riflesso che segue il dito */
+  .glass { position:relative; background:var(--glass); border:1px solid var(--line); border-radius:20px; padding:16px; backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12); }
+  .glass::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .3s;
+    background:radial-gradient(180px circle at var(--mx,-999px) var(--my,-999px), rgba(var(--gold-rgb),.28), transparent 65%); }
+  .glass.lit::before { opacity:1; }
+
+  input[type=text] { width:100%; font:inherit; font-size:1.2rem; padding:16px; border-radius:14px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--ink); outline:none; transition:.2s; }
+  input[type=text]:focus { border-color:var(--gold); box-shadow:0 0 0 4px rgba(var(--gold-rgb),.2); }
+  button { font:inherit; font-weight:800; font-size:1.05rem; border:0; border-radius:14px; padding:16px 18px; color:#fff; width:100%; cursor:pointer; position:relative; overflow:hidden;
+    background:linear-gradient(135deg,var(--gold),var(--red)); box-shadow:0 8px 24px rgba(var(--red-rgb),.45); transition:transform .12s, box-shadow .12s; }
+  button:active { transform:scale(.96); box-shadow:0 3px 10px rgba(var(--red-rgb),.4); }
+  button:disabled { opacity:.5; }
+  button.ghost { background:none; box-shadow:none; color:var(--mut); width:auto; padding:8px 0; font-weight:600; font-size:.95rem; }
+  button::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%); transform:translateX(-120%); animation:shine 3.2s infinite; }
+  button.ghost::after { display:none; }
+  @keyframes shine { 40%,100% { transform:translateX(120%); } }
+
+  .prog { height:8px; background:var(--glass); border-radius:99px; overflow:hidden; margin:0 0 20px; border:1px solid var(--line); }
+  .prog i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--red)); border-radius:99px; transition:width .9s cubic-bezier(.2,.9,.3,1.1); box-shadow:0 0 14px var(--red); }
+
+  .pz { display:flex; align-items:center; gap:14px; margin-bottom:12px; cursor:pointer; transition:transform .15s, border-color .2s; opacity:0; transform:translateY(24px) scale(.96); }
+  .pz.vis { opacity:1; transform:none; transition:opacity .5s, transform .6s cubic-bezier(.2,.9,.3,1.2), border-color .2s; }
+  .pz.vis:active { transform:scale(.97); }
+  .pz.done { border-color:rgba(120,230,140,.45); box-shadow:0 10px 30px rgba(0,0,0,.25), 0 0 24px rgba(80,220,120,.12); }
+  .pz .ico { flex:0 0 52px; height:52px; border-radius:16px; display:grid; place-items:center; font-size:1.8rem; background:linear-gradient(135deg,rgba(var(--gold-rgb),.3),rgba(var(--red-rgb),.3)); }
+  .pz .info { flex:1; min-width:0; }
+  .pz b { display:block; font-size:1.05rem; line-height:1.25; }
+  .pz .price { display:inline-block; margin-top:4px; font-size:.8rem; padding:2px 10px; border-radius:99px; background:rgba(var(--gold-rgb),.18); color:var(--gold); font-weight:700; }
+  .pz .st { font-size:1.6rem; }
+  .hint { color:var(--mut); font-size:.85rem; }
+  .hidden { display:none !important; }
+
+  /* barra fissa in alto nella pagina di voto */
+  .sticky { position:sticky; top:0; z-index:20; margin:0 -16px 18px; padding:calc(10px + env(safe-area-inset-top)) 16px 12px; display:flex; align-items:center; gap:12px;
+    background:var(--bar); backdrop-filter:blur(20px) saturate(1.5); -webkit-backdrop-filter:blur(20px) saturate(1.5); border-bottom:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .sticky .back { background:var(--glass); border:1px solid var(--line); box-shadow:none; width:42px; height:42px; padding:0; border-radius:50%; font-size:1.2rem; flex:0 0 42px; }
+  .sticky .back::after { display:none; }
+  .sticky .tt { flex:1; min-width:0; }
+  .sticky .tt b { display:block; font-size:1.05rem; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .sticky .tt .price { display:inline-block; margin-top:3px; font-size:.78rem; padding:2px 10px; border-radius:99px; background:rgba(var(--gold-rgb),.18); color:var(--gold); font-weight:700; }
+  .ring { flex:0 0 58px; height:58px; border-radius:50%; display:grid; place-items:center; --deg:0deg; transition:--deg .6s cubic-bezier(.2,.9,.3,1);
+    background:conic-gradient(var(--gold), var(--red) var(--deg), rgba(255,255,255,.12) var(--deg)); position:relative; filter:drop-shadow(0 0 10px rgba(var(--red-rgb),.45)); }
+  .ring::before { content:""; position:absolute; inset:5px; border-radius:50%; background:var(--bg2); }
+  .ring span { position:relative; font-size:1.7rem; }
+  .ring span.bump { animation:bump .35s; }
+  @keyframes bump { 40% { transform:scale(1.4) rotate(-10deg); } }
+
+  .row { margin:0 0 30px; }
+  .row:last-child { margin-bottom:6px; }
+  .row .top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .row .lab { font-weight:700; }
+  .row .val { font-weight:900; font-size:1.6rem; min-width:2ch; text-align:right; background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .row .val.unset { background:none; color:var(--mut); font-weight:600; }
+  .track { position:relative; padding-top:6px; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:14px; border-radius:99px; outline:none; margin:6px 0; touch-action:pan-y;
+    background:linear-gradient(90deg,var(--gold),var(--red)) left/var(--p,50%) 100% no-repeat, rgba(255,255,255,.14); }
+  input[type=range].unset { background:rgba(255,255,255,.14); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:36px; height:36px; border-radius:50%; background:#fff; border:0; box-shadow:0 0 0 7px rgba(var(--red-rgb),.35),0 4px 14px rgba(0,0,0,.5); }
+  input[type=range]::-moz-range-thumb { width:36px; height:36px; border-radius:50%; background:#fff; border:0; box-shadow:0 0 0 7px rgba(var(--red-rgb),.35),0 4px 14px rgba(0,0,0,.5); }
+  .bubble { position:absolute; bottom:44px; left:calc(18px + (100% - 36px) * var(--f,.5)); transform:translateX(-50%) scale(0) translateY(10px); transform-origin:bottom center; transition:transform .25s cubic-bezier(.2,1.6,.4,1);
+    padding:6px 14px; border-radius:99px; font-weight:900; font-size:1.2rem; white-space:nowrap; pointer-events:none; color:#fff;
+    background:linear-gradient(135deg,var(--gold),var(--red)); box-shadow:0 8px 24px rgba(var(--red-rgb),.6); }
+  .bubble::after { content:""; position:absolute; left:50%; bottom:-5px; width:12px; height:12px; background:var(--red); transform:translateX(-50%) rotate(45deg); border-radius:2px; }
+  .bubble.on { transform:translateX(-50%) scale(1) translateY(0); }
+
+  #fx { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:50; }
+  .toast { position:fixed; left:50%; bottom:28px; transform:translate(-50%,30px); background:linear-gradient(135deg,#2ecc71,#1fa65a); color:#fff; font-weight:800; padding:14px 26px; border-radius:99px; opacity:0; transition:.3s; pointer-events:none; z-index:60; box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+
+  /* timbro del verdetto */
+  .stamp { position:fixed; inset:0; z-index:70; display:none; place-items:center; background:rgba(10,4,4,.75); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); text-align:center; }
+  .stamp.on { display:grid; animation:fadein .2s; }
+  @keyframes fadein { from { opacity:0; } }
+  .stamp .box { animation:slam .7s cubic-bezier(.2,1.4,.3,1) both; }
+  @keyframes slam { 0% { transform:scale(3.5) rotate(-18deg); opacity:0; } 60% { transform:scale(.92) rotate(3deg); opacity:1; } 100% { transform:scale(1) rotate(-3deg); } }
+  .stamp .big { font-size:8rem; line-height:1; filter:drop-shadow(0 0 40px rgba(var(--red-rgb),.8)); }
+  .stamp .num { font-size:4.5rem; font-weight:900; background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stamp .nm { font-weight:700; opacity:.85; padding:0 24px; margin-top:4px; }
+  .stamp .lbl { letter-spacing:.3em; text-transform:uppercase; font-size:.8rem; color:var(--gold); font-weight:800; margin-bottom:8px; }
+
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration:.35s; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+
+  /* intrattenimento in attesa */
+  .play { display:flex; align-items:center; gap:14px; margin:0 0 16px; border-color:rgba(var(--gold-rgb),.4); background:linear-gradient(120deg,rgba(var(--gold-rgb),.16),rgba(var(--red-rgb),.14)); }
+  .play .pi { font-size:2.4rem; animation:floaty 2.2s ease-in-out infinite; }
+  @keyframes floaty { 50% { transform:translateY(-6px) rotate(-8deg); } }
+  .play .pt { flex:1; min-width:0; }
+  .play b { display:block; font-size:1.1rem; }
+  .play small { display:block; color:var(--mut); font-size:.8rem; margin-top:2px; }
+  .play button { width:auto; padding:12px 20px; }
+  .fact { margin:6px 0 18px; font-size:.95rem; color:var(--ink); text-align:center; min-height:96px; display:grid; place-items:center; }
+  .fact span { display:block; animation:in .6s both; }
+  .fact em { display:block; font-style:normal; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin-bottom:6px; font-weight:800; }
+
+  /* Pizza Ninja */
+  #game { position:fixed; inset:0; z-index:80; background:radial-gradient(circle at 50% 30%,var(--bg2),var(--bg) 70%); touch-action:none; user-select:none; -webkit-user-select:none; }
+  #gc { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+  #hud { position:absolute; top:0; left:0; right:0; padding:calc(14px + env(safe-area-inset-top)) 16px 0; display:flex; align-items:center; gap:14px; pointer-events:none; }
+  #gscore { font-size:2.6rem; font-weight:900; min-width:2.2ch; background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #gbar { flex:1; height:10px; border-radius:99px; background:rgba(255,255,255,.14); overflow:hidden; }
+  #gbar i { display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--gold),var(--red)); border-radius:99px; }
+  #gclose { pointer-events:auto; width:40px; height:40px; padding:0; border-radius:50%; background:var(--glass); border:1px solid var(--line); box-shadow:none; font-size:1rem; }
+  #gclose::after { display:none; }
+  .gscreen { position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:24px; background:rgba(10,4,4,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .gscreen > div { max-width:340px; width:100%; animation:in .5s both; }
+  .gscreen h2 { font-size:2.4rem; margin:0 0 6px; background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .gscreen p { color:var(--mut); margin:0 0 18px; }
+  .gscreen .big { font-size:5rem; font-weight:900; line-height:1; margin:6px 0; }
+  .gscreen .lb { text-align:left; margin:14px 0 18px; font-size:.95rem; }
+  .gscreen .lb div { display:flex; justify-content:space-between; padding:6px 4px; border-top:1px solid var(--line); }
+  .gscreen .lb div.me { color:var(--gold); font-weight:800; }
+  .gscreen button + button { margin-top:10px; }
+  .gscreen button.sec { background:var(--glass); box-shadow:none; border:1px solid var(--line); }
+  .gscreen button.sec::after { display:none; }
+  #game.shake { animation:shk .35s; }
+  @keyframes shk { 20% { transform:translate(-8px,4px); } 40% { transform:translate(7px,-5px); } 60% { transform:translate(-5px,3px); } 80% { transform:translate(4px,-2px); } }
+
+  /* reazioni in diretta */
+  .rfab { position:fixed; right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:30; display:flex; flex-direction:row-reverse; align-items:center; gap:8px; }
+  #rtoggle { width:56px; height:56px; flex:0 0 56px; padding:0; border-radius:50%; font-size:1.7rem; line-height:1; transition:transform .25s; }
+  .rfab.open #rtoggle { transform:rotate(25deg) scale(1.08); }
+  .tray { display:flex; gap:2px; padding:6px; border-radius:99px; background:var(--bar); backdrop-filter:blur(20px) saturate(1.5); -webkit-backdrop-filter:blur(20px) saturate(1.5); border:1px solid var(--line);
+    max-width:0; padding-inline:0; border-width:0; opacity:0; overflow-x:auto; scrollbar-width:none; transition:max-width .4s cubic-bezier(.2,.9,.3,1), opacity .25s, padding .25s; pointer-events:none; }
+  .tray::-webkit-scrollbar { display:none; }
+  .rfab.open .tray { max-width:calc(100vw - 100px); padding-inline:6px; border-width:1px; opacity:1; pointer-events:auto; }
+  .tray button { width:36px; flex:0 0 36px; height:40px; padding:0; font-size:1.45rem; line-height:1; background:none; box-shadow:none; border-radius:12px; }
+  .tray button::after { display:none; }
+  .tray button:active { transform:scale(1.5); }
+  #list { padding-bottom:92px; }
+  .fl { position:fixed; bottom:84px; z-index:25; pointer-events:none; text-align:center; animation:rise var(--d,3.2s) ease-out forwards; }
+  .fl .e { font-size:2.6rem; display:block; filter:drop-shadow(0 4px 12px rgba(var(--red-rgb),.5)); }
+  .fl small { display:block; font-size:.7rem; font-weight:700; background:rgba(0,0,0,.45); border-radius:99px; padding:1px 8px; margin-top:-2px; }
+  @keyframes rise { 0% { transform:translate(0,0) scale(.4); opacity:0; } 12% { opacity:1; transform:translate(0,-30px) scale(1.15); }
+    50% { transform:translate(var(--w,20px),-45vh) scale(1); } 100% { transform:translate(calc(var(--w,20px) * -1),-85vh) scale(.85); opacity:0; } }
+  /* giuria */
+  .jchip { display:flex; align-items:center; gap:10px; padding:6px 0; }
+  .jchip + .jchip { border-top:1px solid var(--line); }
+  .jchip .jn { flex:0 0 38%; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .jchip .jb { flex:1; height:8px; border-radius:99px; background:rgba(255,255,255,.12); overflow:hidden; }
+  .jchip .jb i { display:block; height:100%; width:0; border-radius:99px; background:linear-gradient(90deg,var(--gold),var(--red)); transition:width .8s cubic-bezier(.2,.9,.3,1); }
+  .jchip .jc { flex:0 0 3.2ch; text-align:right; color:var(--mut); font-size:.85rem; font-variant-numeric:tabular-nums; }
+  .jchip.pop { animation:jpop .9s; }
+  @keyframes jpop { 30% { background:rgba(var(--gold-rgb),.25); transform:scale(1.03); } }
+
+  /* elenco pizze: testata con avanzamento, stati, area attesa */
+  .head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:22px 0 18px; }
+  .head h1 { margin:0 0 4px; font-size:1.75rem; }
+  .head p.sub { margin:0; font-size:.95rem; line-height:1.35; }
+  .pring span { font-size:1rem; font-weight:900; }
+  .pring { flex:0 0 62px; height:62px; }
+  .pz { padding:14px; }
+  .pz .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .pz .price, .pz .mine { margin-top:0; font-size:.78rem; padding:2px 10px; border-radius:99px; font-weight:700; }
+  .pz .mine { background:rgba(120,230,140,.16); color:#8be39b; }
+  .pz .go { font-size:1.4rem; color:var(--mut); }
+  .pz.done.vis { opacity:.78; }
+  .pz.next { border-color:rgba(var(--gold-rgb),.75); background:linear-gradient(120deg,rgba(var(--gold-rgb),.14),rgba(var(--red-rgb),.12)); }
+  .pz.next.vis { animation:glowp 2.6s ease-in-out infinite; }
+  @keyframes glowp { 50% { box-shadow:0 10px 30px rgba(0,0,0,.25), 0 0 0 1px rgba(var(--gold-rgb),.5), 0 0 30px rgba(var(--red-rgb),.4); } }
+  .pz .nx { display:inline-block; font-size:.68rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; padding:2px 8px; border-radius:99px; color:#2b1306; background:linear-gradient(135deg,var(--gold),var(--red)); margin-bottom:4px; }
+  .pz.next .go { color:var(--gold); animation:nudge 1.3s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform:translateX(5px); } }
+  .wait { margin:22px 0 10px; padding:14px; }
+  .wait h3 { margin:0 0 10px; font-size:.75rem; color:var(--mut); text-transform:uppercase; letter-spacing:.16em; font-weight:700; }
+  .seg { display:flex; gap:4px; padding:4px; border-radius:14px; background:rgba(0,0,0,.28); margin-bottom:14px; }
+  .seg button { flex:1; width:auto; padding:10px 4px; font-size:.78rem; white-space:nowrap; font-weight:700; background:none; box-shadow:none; color:var(--mut); border-radius:11px; }
+  .seg button::after { display:none; }
+  .seg button.on { background:var(--glass); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line); }
+  .wait .play { margin:0; padding:0; border:0; background:none; box-shadow:none; backdrop-filter:none; }
+  .wait .play::before { display:none; }
+  .wait .fact { margin:0; min-height:92px; }
+  .wait .hint { text-align:center; padding:8px 0; }
+  .notice { display:flex; align-items:center; gap:12px; margin:0 0 14px; padding:12px 14px; font-size:.9rem; line-height:1.35; border-color:rgba(var(--gold-rgb),.35); background:linear-gradient(120deg,rgba(var(--gold-rgb),.12),rgba(var(--red-rgb),.08)); }
+  .notice .ne { font-size:1.7rem; animation:wob 2.6s ease-in-out infinite; }
+  .notice b { color:var(--gold); }
+  @keyframes wob { 25% { transform:rotate(-12deg); } 75% { transform:rotate(12deg); } }
+  .betlist { display:grid; gap:8px; }
+  .bet { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--glass); cursor:pointer; font-weight:700; transition:transform .12s, border-color .2s, background .2s; }
+  .bet:active { transform:scale(.97); }
+  .bet.on { border-color:var(--gold); background:rgba(var(--gold-rgb),.18); box-shadow:0 0 22px rgba(var(--gold-rgb),.25); }
+</style>
+<script src="/assets/sfx.js"></script>
+<script src="/assets/theme.js" defer></script>
+<script src="/assets/ceremony.js" defer></script>
+<script src="/assets/share.js" defer></script>
+</head>
+<body>
+<div class="aurora"><i><b></b></i><i><b></b></i><i><b></b></i></div>
+<div id="rain"></div>
+<canvas id="fx"></canvas>
+<main>
+  <section id="login" class="hidden">
+    <div class="orbit"><div class="pz0">🍕</div><div class="o"><span>🧀</span></div><div class="o"><span>🍅</span></div><div class="o"><span>🌶️</span></div></div>
+    <h1 style="text-align:center">Sfida delle pizze surgelate</h1>
+    <p class="sub" style="text-align:center">Chi è il re del freezer? Dillo con un voto.</p>
+    <div class="glass">
+      <input type="text" id="name" placeholder="Come ti chiami?" maxlength="30" autocomplete="off">
+      <div style="height:14px"></div>
+      <button id="go">Entra in gara 🔥</button>
+    </div>
+  </section>
+
+  <section id="list" class="hidden">
+    <div class="head">
+      <div><h1>Ciao <span id="who"></span>! 👋</h1><p class="sub" id="subline">Tocca una pizza e giudicala senza pietà.</p></div>
+      <div class="ring pring" id="pring"><span id="ptxt">0/0</span></div>
+    </div>
+    <div class="glass notice hidden" id="notice"><span class="ne">📢</span><span><b>Avviso della giuria:</b> <span id="noticetxt"></span></span></div>
+    <div id="pizzas"></div>
+    <p id="empty" class="hint hidden">Ancora nessuna pizza in gara. Aspetta che l'organizzatore le aggiunga.</p>
+    <div class="glass wait">
+      <h3>Nell'attesa</h3>
+      <div class="seg" id="seg"><button data-p="game">🎮 Gioca</button><button data-p="jury">👥 Giuria</button><button data-p="bet">🔮 Pronostico</button><button data-p="fact">💡 Info</button></div>
+      <div class="pane" id="pane-game">
+        <div class="play">
+          <div class="pi">🎮</div>
+          <div class="pt"><b>Pizza Ninja</b><small>Affetta più pizze che puoi in 30 secondi</small><small id="pbest"></small></div>
+          <button id="playbtn">Gioca</button>
+        </div>
+      </div>
+      <div class="pane hidden" id="pane-jury"><div id="jlist"></div></div>
+      <div class="pane hidden" id="pane-bet"><p class="hint" style="text-align:center;margin:0 0 10px">Chi vincerà la sfida? Puoi cambiare idea finché non parte la cerimonia.</p><div class="betlist" id="betlist"></div></div>
+      <div class="pane hidden" id="pane-fact"><div class="fact" id="fact"></div></div>
+    </div>
+    <button class="ghost" id="logout">Non sono io / cambia nome</button>
+  </section>
+
+  <section id="vote" class="hidden">
+    <div class="sticky">
+      <button class="back" id="back" aria-label="Indietro">←</button>
+      <div class="tt"><b id="ptitle"></b><span class="price" id="pprice"></span></div>
+      <div class="ring" id="ring"><span id="face">😐</span></div>
+    </div>
+    <div class="glass" id="rows"></div>
+    <div style="height:16px"></div>
+    <button id="send">Invia il verdetto 🍕</button>
+    <p class="hint" style="text-align:center">Puoi cambiare il voto quando vuoi.</p>
+  </section>
+</main>
+<div id="game" class="hidden">
+  <canvas id="gc"></canvas>
+  <div id="hud"><div id="gscore">0</div><div id="gbar"><i id="gbari"></i></div><button id="gclose" aria-label="Chiudi">✕</button></div>
+  <div class="gscreen" id="gmsg"></div>
+</div>
+<div class="rfab hidden" id="reactbar"><button id="rtoggle" aria-label="Reazioni">🔥</button><div class="tray" id="tray"></div></div>
+<div class="toast" id="toast">Voto salvato ✔</div>
+<div class="stamp" id="stamp"><div class="box"><div class="lbl">Verdetto</div><div class="big" id="sface"></div><div class="num" id="snum"></div><div class="nm" id="snm"></div></div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const eur = v => '€ ' + v.toFixed(2).replace('.', ',');
+const faceFor = v => v<=2?'🤮':v<=4?'😕':v<=5?'😐':v<=6?'🙂':v<=7?'😋':v<=8?'😍':v<=9?'🤩':'🔥';
+const icons = ['🍕','🧀','🍅','🌶️','🥓','🍄','🫒','🥔'];
+let cfg = null, mine = {}, name = localStorage.getItem('pizza-name') || '', current = null, draft = {};
+
+const api = (url, opt = {}) => fetch(url, {...opt, headers: {'Content-Type':'application/json', 'X-Voter': encodeURIComponent(name)}}).then(r => r.json());
+function show(id) {
+  const go = () => { for (const s of ['login','list','vote']) $(s).classList.toggle('hidden', s !== id); $('reactbar').classList.toggle('hidden', id !== 'list'); window.scrollTo(0,0); };
+  document.startViewTransition ? document.startViewTransition(go) : go();
+}
+
+// sfondo
+(() => { const r = $('rain'); for (let i=0;i<12;i++) { const s=document.createElement('span'); s.textContent=['🍕','🧀','🍅','🌶️'][i%4];
+  s.style.left=Math.random()*100+'vw'; s.style.fontSize=(22+Math.random()*34)+'px'; s.style.animationDuration=(14+Math.random()*18)+'s'; s.style.animationDelay=(-Math.random()*30)+'s'; r.appendChild(s); } })();
+
+// parallax con il giroscopio (iOS chiede il permesso al primo tocco)
+function gyro() {
+  const on = () => addEventListener('deviceorientation', e => {
+    const r = document.documentElement.style;
+    r.setProperty('--tx', Math.max(-1, Math.min(1, (e.gamma || 0) / 30)));
+    r.setProperty('--ty', Math.max(-1, Math.min(1, ((e.beta || 45) - 45) / 30)));
+  });
+  if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().then(s => s === 'granted' && on()).catch(()=>{});
+  else if (typeof DeviceOrientationEvent !== 'undefined') on();
+}
+addEventListener('pointerdown', gyro, {once:true});
+
+// riflesso luminoso che segue il dito/mouse sulle card
+addEventListener('pointermove', lightUp, {passive:true});
+addEventListener('pointerdown', lightUp, {passive:true});
+function lightUp(e) { const g = e.target.closest && e.target.closest('.glass'); if (!g) return; const r = g.getBoundingClientRect();
+  g.style.setProperty('--mx', (e.clientX - r.left) + 'px'); g.style.setProperty('--my', (e.clientY - r.top) + 'px'); g.classList.add('lit'); clearTimeout(g._t); g._t = setTimeout(() => g.classList.remove('lit'), 900); }
+
+// motore particelle: coriandoli + braci
+const fx = $('fx'), ctx = fx.getContext('2d'); let parts = [], raf = 0;
+const dpr = devicePixelRatio || 1;
+function resize() { fx.width = innerWidth * dpr; fx.height = innerHeight * dpr; }
+addEventListener('resize', resize); resize();
+function confetti(x = innerWidth/2, y = innerHeight*.7, n = 90) {
+  const cols = (window.THEME && THEME.confetti) || ['#ffb703','#ff4d2e','#fff4e6','#4cc9f0','#7bd88f','#ff7eb6'];
+  for (let i=0;i<n;i++) { const a = -Math.PI/2 + (Math.random()-.5)*2.2, v = 6+Math.random()*11;
+    parts.push({k:'c', x:x*dpr, y:y*dpr, vx:Math.cos(a)*v*dpr, vy:Math.sin(a)*v*dpr, s:(5+Math.random()*7)*dpr, r:Math.random()*6, vr:(Math.random()-.5)*.4, c:cols[i%cols.length], life:0, max:110}); }
+  go();
+}
+function sparks(x, y, v) {   // v alto = fiamme che salgono, v basso = bava verde che cade
+  const n = 2 + Math.round(v / 1.6), low = v <= 3;
+  for (let i=0;i<n;i++) { const a = (low ? Math.PI/2 : -Math.PI/2) + (Math.random()-.5)*1.7, sp = 1.2 + Math.random()*(1.5+v*.45);
+    parts.push({k:'e', x:x*dpr, y:y*dpr, vx:Math.cos(a)*sp*dpr, vy:Math.sin(a)*sp*dpr, s:(2.5+Math.random()*4)*dpr, hue: low ? 95+Math.random()*50 : 48-(v-3)*5+Math.random()*14, g: low ? .1 : -.025, life:0, max:28+Math.random()*26}); }
+  go();
+}
+function go() { if (!raf) raf = requestAnimationFrame(tick); }
+function tick() {
+  ctx.clearRect(0,0,fx.width,fx.height);
+  parts = parts.filter(p => p.life < p.max);
+  for (const p of parts) {
+    p.life++; const k = p.life / p.max;
+    if (p.k === 'c') { p.vy += .35*dpr; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.globalAlpha = Math.min(1,(1-k)*3.6); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); ctx.restore(); }
+    else { p.vy += p.g*dpr; p.x += p.vx; p.y += p.vy; p.vx *= .98;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const r = p.s*(1.4-k*.9);
+      const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.2); g.addColorStop(0,`hsla(${p.hue},100%,65%,${1-k})`); g.addColorStop(1,`hsla(${p.hue},100%,50%,0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x,p.y,r*2.2,0,7); ctx.fill(); ctx.restore(); }
+  }
+  raf = parts.length ? requestAnimationFrame(tick) : 0;
+}
+
+async function refresh() { cfg = await api('/api/config'); mine = await api('/api/mine'); }
+
+async function showList() {
+  await refresh();
+  $('who').textContent = name;
+  $('notice').classList.toggle('hidden', !cfg.notice); $('noticetxt').textContent = cfg.notice || '';
+  const box = $('pizzas'); box.innerHTML = '';
+  $('empty').classList.toggle('hidden', cfg.pizzas.length > 0);
+  const total = cfg.pizzas.length, doneN = cfg.pizzas.filter(p => mine[p.id]).length;
+  const next = cfg.pizzas.find(p => !mine[p.id]);
+  cfg.pizzas.forEach((p, i) => {
+    const sc = mine[p.id], ok = !!sc, isNext = next && next.id === p.id;
+    const my = ok ? Object.values(sc).reduce((a,b) => a+b, 0) / Math.max(1, Object.values(sc).length) : null;
+    const d = document.createElement('div');
+    d.className = 'glass pz' + (ok ? ' done' : '') + (isNext ? ' next' : '');
+    d.innerHTML = `<div class="ico">${icons[i % icons.length]}</div><div class="info">${isNext ? '<span class="nx">Tocca a te</span>' : ''}<b></b><div class="tags"></div></div><div class="go">${ok ? '✅' : '›'}</div>`;
+    d.querySelector('b').textContent = p.name;
+    const tags = d.querySelector('.tags');
+    if (p.price) { const t = document.createElement('span'); t.className = 'price'; t.textContent = eur(p.price); tags.appendChild(t); }
+    if (ok) { const t = document.createElement('span'); t.className = 'mine'; t.textContent = 'Il tuo voto ' + my.toFixed(1); tags.appendChild(t); }
+    if (!tags.children.length) tags.remove();
+    d.onclick = () => openVote(p);
+    box.appendChild(d);
+  });
+  $('subline').textContent = !total ? 'Aspetta che l\'organizzatore aggiunga le pizze.'
+    : doneN === total ? 'Le hai votate tutte! 🎉 Ora gioca e aspetta il verdetto.'
+    : doneN === 0 ? 'Tocca una pizza e giudicala senza pietà.'
+    : `Prossima: ${next.name}`;
+  $('ptxt').textContent = `${doneN}/${total}`;
+  $('pring').style.setProperty('--deg', '0deg');
+  show('list'); loadBest(); pollJury(); loadBet();
+  requestAnimationFrame(() => {
+    box.querySelectorAll('.pz').forEach((el, i) => setTimeout(() => el.classList.add('vis'), 120 + i*70));
+    $('pring').style.setProperty('--deg', (total ? doneN/total*360 : 0) + 'deg');
+  });
+}
+
+// area "nell'attesa": una scheda sola con tre pannelli
+function setPane(p) {
+  for (const k of ['game','jury','bet','fact']) $('pane-' + k).classList.toggle('hidden', k !== p);
+  $('seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  try { localStorage.setItem('pizza-pane', p); } catch {}
+  if (p === 'jury') pollJury();
+}
+$('seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setPane(b.dataset.p); });
+let savedPane = 'game'; try { savedPane = localStorage.getItem('pizza-pane') || 'game'; } catch {}
+setPane(savedPane);
+
+const avg = () => { const v = Object.values(draft); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+function updRing(bump) {
+  const a = avg(), f = $('face');
+  f.textContent = a ? faceFor(Math.round(a)) : '😐';
+  $('ring').style.setProperty('--deg', (a ? a/10*360 : 0) + 'deg');
+  if (bump) { f.classList.remove('bump'); void f.offsetWidth; f.classList.add('bump'); }
+}
+
+function openVote(p) {
+  current = p;
+  draft = {...(mine[p.id] || {})};
+  $('ptitle').textContent = p.name;
+  const pp = $('pprice'); pp.textContent = p.price ? eur(p.price) : ''; pp.style.display = p.price ? '' : 'none';
+  const rows = $('rows'); rows.innerHTML = '';
+  for (const c of cfg.categories) {
+    const v = draft[c.id];
+    const r = document.createElement('div'); r.className = 'row';
+    r.innerHTML = `<div class="top"><span class="lab">${c.icon} ${c.label}</span><span class="val ${v?'':'unset'}">${v||'–'}</span></div>
+      <div class="track"><div class="bubble"></div><input type="range" class="${v?'':'unset'}" min="1" max="10" step="1" value="${v||5}"></div>`;
+    const val = r.querySelector('.val'), inp = r.querySelector('input'), bub = r.querySelector('.bubble'), track = r.querySelector('.track');
+    const fill = () => { const f = (inp.value-1)/9; inp.style.setProperty('--p', f*100 + '%'); bub.style.setProperty('--f', f); bub.textContent = faceFor(+inp.value) + ' ' + inp.value; };
+    fill();
+    let hideT;
+    const set = (burst) => {
+      const changed = draft[c.id] !== +inp.value;
+      draft[c.id] = +inp.value; val.textContent = inp.value; val.classList.remove('unset'); inp.classList.remove('unset'); fill(); updRing(changed);
+      bub.classList.add('on'); clearTimeout(hideT); hideT = setTimeout(() => bub.classList.remove('on'), 700);
+      const rc = inp.getBoundingClientRect(), x = rc.left + 18 + (rc.width-36)*(inp.value-1)/9, y = rc.top + rc.height/2;
+      sparks(x, y, +inp.value);
+      if (+inp.value === 10) { confetti(x, y, 28); }
+      if (navigator.vibrate) navigator.vibrate(+inp.value === 10 ? [12,30,24] : 8);
+    };
+    // il voto cambia SOLO trascinando lo slider, mai scorrendo la pagina
+    inp.addEventListener('input', () => set());
+    // un tap secco (senza movimento) su uno slider non ancora votato conferma il valore mostrato
+    let start = null;
+    inp.addEventListener('pointerdown', e => { start = {x:e.clientX, y:e.clientY, t:performance.now()}; });
+    inp.addEventListener('pointerup', e => { if (start && !draft[c.id] && Math.hypot(e.clientX-start.x, e.clientY-start.y) < 6 && performance.now()-start.t < 400) set(); start = null; });
+    inp.addEventListener('pointercancel', () => { start = null; });   // scroll in corso: nessun voto
+    inp.addEventListener('pointermove', e => { if (start && Math.hypot(e.clientX-start.x, e.clientY-start.y) >= 6) start = null; });
+    rows.appendChild(r);
+  }
+  updRing(false);
+  show('vote');
+}
+
+function stampIt() {
+  window.sfx && sfx.vote();
+  const a = avg() ?? 0;
+  $('sface').textContent = faceFor(Math.round(a)); $('snm').textContent = current.name;
+  const num = $('snum'); const t0 = performance.now();
+  const step = t => { const k = Math.min(1,(t-t0)/800); num.textContent = (a*(1-Math.pow(1-k,3))).toFixed(1); if (k<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  const s = $('stamp'); s.classList.add('on');
+  setTimeout(() => { confetti(innerWidth/2, innerHeight*.55, 110); confetti(innerWidth*.15, innerHeight*.8, 60); confetti(innerWidth*.85, innerHeight*.8, 60); }, 350);
+  if (navigator.vibrate) navigator.vibrate([20,40,60]);
+  setTimeout(() => { s.classList.remove('on'); showList(); }, 2100);
+}
+
+$('send').onclick = async () => {
+  if (Object.keys(draft).length < cfg.categories.length && !confirm('Non hai votato tutte le categorie. Inviare lo stesso?')) return;
+  $('send').disabled = true;
+  const res = await api('/api/vote', {method:'POST', body: JSON.stringify({name, pizza: current.id, scores: draft})});
+  $('send').disabled = false;
+  if (res.ok) stampIt(); else alert(res.error || 'Errore');
+};
+$('stamp').onclick = () => { $('stamp').classList.remove('on'); showList(); };
+$('back').onclick = showList;
+$('logout').onclick = () => { localStorage.removeItem('pizza-name'); name = ''; $('name').value=''; show('login'); };
+$('go').onclick = () => { const n = $('name').value.trim(); if (!n) return; name = n; localStorage.setItem('pizza-name', n); confetti(innerWidth/2, innerHeight*.5, 60); window.sfx && sfx.join(); showList(); };
+$('name').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+
+// ================= intrattenimento: curiosità a rotazione =================
+const FACTS = [
+  ['Lo sapevi?', "La pizza napoletana cuoce in 60-90 secondi in un forno a legna oltre i 400 °C. Il tuo forno di casa ci mette un po' di più 😅"],
+  ['Lo sapevi?', "L'arte del pizzaiuolo napoletano è patrimonio immateriale dell'UNESCO dal 2017."],
+  ['Lo sapevi?', "Secondo la tradizione la Margherita nasce nel 1889 in onore della regina Margherita di Savoia: pomodoro, mozzarella e basilico come il tricolore."],
+  ['Lo sapevi?', 'La pizza con l\'ananas, nonostante il nome "Hawaiian", pare sia stata inventata in Canada intorno al 1962. Sì, abbiamo i nostri sospetti 🍍'],
+  ['Lo sapevi?', "Il pomodoro è arrivato in Europa dalle Americhe nel '500: prima di allora la pizza era decisamente più bianca."],
+  ['Lo sapevi?', 'La parola "pizza" compare in un documento di Gaeta del 997 d.C.'],
+  ['Consiglio da giurato', 'Assaggia anche il bordo e il centro: la vera pizza si giudica ovunque, non solo sulla punta.'],
+  ['Consiglio da giurato', "Un sorso d'acqua tra una pizza e l'altra resetta il palato. Niente barare con la birra 🍺"],
+  ['Consiglio da giurato', 'Vota senza farti influenzare dalla faccia degli altri. Il poker face conta!'],
+  ['Sfida', "Batti il record di Pizza Ninja: il re dell'attesa viene proclamato sulla dashboard 👑"],
+];
+let factI = Math.floor(Math.random()*FACTS.length);
+function showFact() {
+  const [t, s] = FACTS[factI++ % FACTS.length];
+  $('fact').innerHTML = '<span><em></em><i></i></span>';
+  $('fact').querySelector('em').textContent = t;
+  const i = $('fact').querySelector('i'); i.style.fontStyle = 'normal'; i.textContent = s;
+}
+showFact(); setInterval(showFact, 9000);
+
+// ================= Pizza Ninja =================
+const gc = $('gc'), g2 = gc.getContext('2d');
+let gW = 0, gH = 0, running = false, gRaf = 0, gLast = 0;
+let lastSlice = 0, faceAt = 0, faceDone = false;
+let objs = [], halves = [], bits = [], floats = [], trail = [], gscore = 0, tleft = 30, spawnT = 0, swipe = 0, down = false, lastPt = null, ac = null;
+const GAME_TIME = 30;
+const GOOD = [{e:'🍕',v:1,w:40,c:'#ffb703'},{e:'🧀',v:1,w:22,c:'#ffd23f'},{e:'🍅',v:1,w:22,c:'#ff4d2e'},{e:'🌶️',v:2,w:10,c:'#ff2d2d'}];
+
+function beep(f, d = .09, type = 'triangle') {
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f; g.gain.setValueAtTime(.12, ac.currentTime); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + d);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch {}
+}
+function gResize() { gW = innerWidth; gH = innerHeight; gc.width = gW*dpr; gc.height = gH*dpr; g2.setTransform(dpr,0,0,dpr,0,0); }
+const GRAV = () => gH * 1.15;
+
+function spawn() {
+  const r = 34, x = r + Math.random()*(gW - 2*r), prog = 1 - tleft/GAME_TIME, roll = Math.random();
+  let t;
+  if (roll < .07) t = {e:'🍕', v:5, gold:true, c:'#fff2a8'};
+  else if (roll < .17 + prog*.12) t = {e:'🍍', v:-5, bad:true, c:'#9acd32'};
+  else { let w = Math.random()*GOOD.reduce((a,b)=>a+b.w,0); t = GOOD.find(o => (w -= o.w) < 0) || GOOD[0]; }
+  const h = gH*(.5 + Math.random()*.32), vy = -Math.sqrt(2*GRAV()*h), tApex = -vy/GRAV();
+  objs.push({...t, x, y:gH + r, vx:(gW/2 - x)*(.3 + Math.random()*.3)/tApex, vy, r, rot:0, vr:(Math.random()-.5)*5});
+}
+function spawnFace() {   // bonus: una sola per partita, sale piano così si riesce a prenderla
+  faceDone = true;
+  const r = 46, x = r + 20 + Math.random()*(gW - 2*r - 40), h = gH*.72, vy = -Math.sqrt(2*GRAV()*h), tApex = -vy/GRAV();
+  objs.push({e:'⭐', v:500, star:true, gold:true, c:'#ffd23f', x, y:gH + r, vx:(gW/2 - x)*.35/tApex, vy, r, rot:0, vr:(Math.random()-.5)*2.4});
+  beep(880, .12); setTimeout(() => beep(1180, .14), 120);
+}
+function segDist(px,py,ax,ay,bx,by) { const dx = bx-ax, dy = by-ay, l = dx*dx+dy*dy; let t = l ? ((px-ax)*dx+(py-ay)*dy)/l : 0; t = Math.max(0,Math.min(1,t)); return Math.hypot(px-(ax+t*dx), py-(ay+t*dy)); }
+function hit(ax,ay,bx,by) { for (const o of objs) if (!o.dead && segDist(o.x,o.y,ax,ay,bx,by) < o.r + 10) sliceIt(o); }
+
+function sliceIt(o) {
+  o.dead = true;
+  // la combo conta solo i pezzi tagliati a raffica (max 0,35 s l'uno dall'altro): tenere il dito giù non basta
+  const tNow = performance.now();
+  if (tNow - lastSlice > 350) swipe = 0;
+  lastSlice = tNow; swipe++;
+  let pts = o.v;
+  if (!o.bad && swipe >= 3) pts += swipe - 2;      // combo: tre o più pezzi in un colpo solo
+  gscore = Math.max(0, gscore + pts); $('gscore').textContent = gscore;
+  halves.push({...o, half:-1, vx:o.vx - 120, vy:o.vy - 60, vr:-3, life:0}, {...o, half:1, vx:o.vx + 120, vy:o.vy - 60, vr:3, life:0});
+  for (let i=0;i<12;i++) { const a = Math.random()*6.28, s = 80 + Math.random()*260; bits.push({x:o.x, y:o.y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, c:o.c, life:0, max:.5 + Math.random()*.4, s:3 + Math.random()*4}); }
+  if (o.star) for (let i=0;i<40;i++) { const a = Math.random()*6.28, sp = 120 + Math.random()*380; bits.push({x:o.x, y:o.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, c:['#ffd23f','#fff4e6','#ff4d2e'][i%3], life:0, max:.7 + Math.random()*.6, s:4 + Math.random()*5}); }
+  floats.push({x:o.x, y:o.y - 20, t: o.star ? '⭐ JACKPOT +' + pts : o.bad ? '🍍 ORRORE! −5' : (swipe >= 3 ? `COMBO ×${swipe}  +${pts}` : '+' + pts), c: o.bad ? '#ff5b5b' : (o.gold ? '#ffe066' : '#fff4e6'), life:0});
+  if (o.bad) { swipe = 0; $('game').classList.remove('shake'); void $('game').offsetWidth; $('game').classList.add('shake'); beep(110, .3, 'sawtooth'); navigator.vibrate && navigator.vibrate([60,40,60]); }
+  else if (o.star) { [660, 880, 1180, 1480].forEach((f, i) => setTimeout(() => beep(f, .16), i*90)); navigator.vibrate && navigator.vibrate([30,30,30,30,80]); }
+  else { beep(420 + Math.min(swipe,8)*70 + (o.gold ? 300 : 0)); navigator.vibrate && navigator.vibrate(10); }
+}
+
+function gDraw() {
+  g2.clearRect(0,0,gW,gH);
+  const emoji = (o, half) => { g2.save(); g2.translate(o.x,o.y); g2.rotate(o.rot);
+    if (o.gold) { g2.shadowColor = '#ffd23f'; g2.shadowBlur = 30; }
+    if (half) { g2.beginPath(); g2.rect(half < 0 ? -60 : 0, -60, 60, 120); g2.clip(); }
+    g2.font = (o.star ? '92px' : '58px') + ' serif'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(o.e, 0, 3);
+    g2.restore(); };
+  for (const o of objs) if (!o.dead) emoji(o);
+  for (const h of halves) { g2.globalAlpha = Math.max(0, 1 - h.life*1.4); emoji(h, h.half); g2.globalAlpha = 1; }
+  g2.globalCompositeOperation = 'lighter';
+  for (const b of bits) { g2.fillStyle = b.c; g2.globalAlpha = Math.max(0, 1 - b.life/b.max); g2.beginPath(); g2.arc(b.x,b.y,b.s,0,7); g2.fill(); }
+  g2.globalAlpha = 1; g2.globalCompositeOperation = 'source-over';
+  g2.font = '800 22px system-ui'; g2.textAlign = 'center';
+  for (const f of floats) { g2.globalAlpha = Math.max(0, 1 - f.life/.9); g2.fillStyle = f.c; g2.fillText(f.t, Math.max(80,Math.min(gW-80,f.x)), f.y); }
+  g2.globalAlpha = 1;
+  if (trail.length > 1) { g2.lineCap = 'round'; for (let i=1;i<trail.length;i++) { const k = i/trail.length; g2.strokeStyle = `rgba(255,${200+k*55|0},${120+k*100|0},${k})`; g2.lineWidth = 2 + k*9; g2.beginPath(); g2.moveTo(trail[i-1].x, trail[i-1].y); g2.lineTo(trail[i].x, trail[i].y); g2.stroke(); } }
+}
+
+function gTick(now) {
+  const dt = Math.min(.05, (now - gLast)/1000); gLast = now;
+  if (running) {
+    tleft -= dt; $('gbari').style.width = Math.max(0, tleft/GAME_TIME*100) + '%';
+    spawnT -= dt;
+    if (!faceDone && GAME_TIME - tleft >= faceAt) spawnFace();
+    if (spawnT <= 0) { const n = 1 + (Math.random() < .35) + (Math.random() < .15); for (let i=0;i<n;i++) spawn(); spawnT = .85 - (1 - tleft/GAME_TIME)*.35 + Math.random()*.3; }
+    if (tleft <= 0) endGame();
+  }
+  for (const o of objs) { o.vy += GRAV()*dt; o.x += o.vx*dt; o.y += o.vy*dt; o.rot += o.vr*dt; }
+  objs = objs.filter(o => !o.dead && !(o.y > gH + 80 && o.vy > 0));
+  for (const h of halves) { h.vy += GRAV()*dt; h.x += h.vx*dt; h.y += h.vy*dt; h.rot += h.vr*dt; h.life += dt; }
+  halves = halves.filter(h => h.life < .8);
+  for (const b of bits) { b.vy += 500*dt; b.x += b.vx*dt; b.y += b.vy*dt; b.life += dt; } bits = bits.filter(b => b.life < b.max);
+  for (const f of floats) { f.y -= 50*dt; f.life += dt; } floats = floats.filter(f => f.life < .9);
+  trail = trail.filter(p => now - p.t < 220);
+  gDraw();
+  gRaf = $('game').classList.contains('hidden') ? 0 : requestAnimationFrame(gTick);
+}
+
+const gpos = e => { const r = gc.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top, t:performance.now()}; };
+gc.addEventListener('pointerdown', e => { if (!running) return; down = true; swipe = 0; lastPt = gpos(e); trail = [lastPt]; hit(lastPt.x,lastPt.y,lastPt.x,lastPt.y); gc.setPointerCapture(e.pointerId); });
+gc.addEventListener('pointermove', e => { if (!down) return; const p = gpos(e); trail.push(p); hit(lastPt.x,lastPt.y,p.x,p.y); lastPt = p; });
+const gUp = () => { down = false; swipe = 0; };
+gc.addEventListener('pointerup', gUp); gc.addEventListener('pointercancel', gUp);
+
+function gMsg(html) { const m = $('gmsg'); m.innerHTML = '<div>' + html + '</div>'; m.classList.remove('hidden'); }
+function startScreen() {
+  gMsg(`<h2>🍕 Pizza Ninja</h2><p>Trascina il dito per affettare pizze, formaggi e pomodori.<br>Tre pezzi in un colpo = <b>COMBO</b>. La pizza dorata vale 5.<br><b>Evita l'ananas 🍍!</b></p><button id="gstart">Via! (${GAME_TIME} secondi)</button><button class="sec" id="gexit">Esci</button>`);
+  $('gstart').onclick = startGame; $('gexit').onclick = closeGame;
+}
+function startGame() {
+  ended = false; faceDone = false; faceAt = 4 + Math.random()*18;
+  objs = []; halves = []; bits = []; floats = []; trail = []; gscore = 0; tleft = GAME_TIME; spawnT = .2; $('gscore').textContent = '0';
+  $('gmsg').classList.add('hidden'); running = true; beep(660, .12);
+}
+// salvataggio: se la rete cade il punteggio resta in coda sul telefono e viene rinviato da solo
+const PEND = 'pizza-pending';
+const getPend = () => { try { return JSON.parse(localStorage.getItem(PEND) || 'null'); } catch { return null; } };
+const setPend = v => { try { v ? localStorage.setItem(PEND, JSON.stringify(v)) : localStorage.removeItem(PEND); } catch {} };
+async function saveScore(score, who = name) {
+  if (!who || !(score > 0)) return null;
+  try {
+    const r = await fetch('/api/score', {method:'POST', keepalive:true, headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: who, score})});
+    const j = await r.json(); if (r.status === 400) { setPend(null); return null; }   // rifiutato dal server: inutile riprovare
+    if (!r.ok || j.error) throw new Error(j.error || r.status);
+    const p = getPend(); if (p && p.name === who && p.score <= score) setPend(null);
+    return j;
+  } catch {
+    const p = getPend(); if (!p || p.name !== who || score > p.score) setPend({name: who, score});
+    return null;
+  }
+}
+async function flushPending() { const p = getPend(); if (p && !running) { const j = await saveScore(p.score, p.name); if (j) loadBest(); } }
+setInterval(flushPending, 8000); flushPending();
+// se esci o blocchi il telefono a metà partita, i punti fatti finora si salvano comunque
+document.addEventListener('visibilitychange', () => { if (document.hidden && running) endGame(); });
+addEventListener('pagehide', () => { if (running) { running = false; saveScore(gscore); } });
+
+let ended = false;
+async function endGame() {
+  if (ended) return; ended = true;
+  running = false; down = false; beep(330, .3, 'square');
+  gMsg(`<h2>Tempo scaduto!</h2><div class="big">${gscore}</div><p>punti · salvo il punteggio…</p>`);
+  const res = await saveScore(gscore);
+  const top = res && res.top ? res.top : [];
+  const newBest = res && gscore >= res.best && gscore > 0;
+  if (newBest) { confetti(innerWidth/2, innerHeight*.5, 120); window.sfx && sfx.record(); }
+  gMsg(`<h2>${newBest ? '🏆 Nuovo record!' : 'Tempo scaduto!'}</h2><div class="big">${gscore}</div>
+    <p>${res ? `✔ Salvato · il tuo record: <b>${res.best}</b> · sei <b>${res.rank}°</b>` : (gscore > 0 ? '⚠️ Rete assente: riprovo a salvare da solo ogni pochi secondi' : 'Fai almeno un punto per entrare in classifica!')}</p>
+    <div class="lb">${top.map((s,i) => `<div class="${s.name.toLowerCase()===name.toLowerCase()?'me':''}"><span>${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${s.name.replace(/[<>&]/g,'')}</span><b>${s.best}</b></div>`).join('')}</div>
+    <button id="gagain">Rigioca 🔥</button><button class="sec" id="gshare">📣 Condividi</button><button class="sec" id="gexit">Chiudi</button>`);
+  $('gagain').onclick = startGame; $('gexit').onclick = closeGame;
+  $('gshare').onclick = () => window.shareSheet && shareSheet({
+    text: `🥷🍕 Ho fatto ${gscore} punti a Pizza Ninja${res ? ' (record: ' + res.best + ')' : ''}! Riesci a battermi? #SfidaPizze`,
+    card: {title: 'Pizza Ninja', subtitle: name + ' · Sfida delle pizze surgelate', big: String(gscore), rows: top.slice(0, 3).map((s, i) => ({icon: ['🥇', '🥈', '🥉'][i], label: s.name, value: String(s.best)}))},
+  });
+}
+function openGame() { $('game').classList.remove('hidden'); document.body.style.overflow = 'hidden'; gResize(); startScreen(); gLast = performance.now(); if (!gRaf) gRaf = requestAnimationFrame(gTick); }
+function closeGame() { if (running && gscore > 0) saveScore(gscore).then(j => j && loadBest()); running = false; $('game').classList.add('hidden'); document.body.style.overflow = ''; loadBest(); }
+$('playbtn').onclick = openGame; $('gclose').onclick = closeGame;
+addEventListener('resize', () => { if (!$('game').classList.contains('hidden')) gResize(); });
+
+async function loadBest() {
+  try { const top = await api('/api/scores'); const me = top.find(s => s.name.toLowerCase() === name.toLowerCase());
+    $('pbest').textContent = top.length ? `${me ? 'Il tuo record: ' + me.best + ' · ' : ''}Primo: ${top[0].name} (${top[0].best})` : 'Nessun record: sii il primo!'; } catch {}
+}
+
+// ================= reazioni in diretta + giuria (restano sulla pagina) =================
+const REACTS = ['🔥','😍','🤤','🤮','😱','👏','💩','🍍'];
+$('tray').innerHTML = REACTS.map(e => `<button data-e="${e}" aria-label="${e}">${e}</button>`).join('');
+function floatEmoji(e, who) {
+  window.sfx && sfx.pop();
+  const el = document.createElement('div'); el.className = 'fl';
+  el.style.left = (8 + Math.random()*76) + 'vw'; el.style.setProperty('--w', (Math.random()*60-30) + 'px'); el.style.setProperty('--d', (2.8 + Math.random()*1.4) + 's');
+  el.innerHTML = '<span class="e"></span><small></small>'; el.firstChild.textContent = e; el.lastChild.textContent = who;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 4400);
+}
+let lastReact = null, reactT = 0;
+let trayT = 0;
+const trayOpen = on => { $('reactbar').classList.toggle('open', on); clearTimeout(trayT); if (on) trayT = setTimeout(() => trayOpen(false), 6000); };
+$('rtoggle').onclick = () => trayOpen(!$('reactbar').classList.contains('open'));
+$('tray').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; trayOpen(true);
+  floatEmoji(b.dataset.e, 'tu'); navigator.vibrate && navigator.vibrate(8);
+  api('/api/react', {method:'POST', body: JSON.stringify({name, emoji: b.dataset.e})}).catch(()=>{});
+});
+async function pollReact() {
+  if ($('list').classList.contains('hidden')) return;
+  try {
+    const r = await api('/api/reactions?since=' + (lastReact ?? 0));
+    if (lastReact !== null) r.items.filter(i => i.name.toLowerCase() !== name.toLowerCase()).slice(-12).forEach((i, k) => setTimeout(() => floatEmoji(i.emoji, i.name), k*160));
+    lastReact = r.last;
+  } catch {}
+}
+const prevJ = {};
+async function pollJury() {
+  if ($('list').classList.contains('hidden')) return;
+  try {
+    const r = await api('/api/jury'), box = $('jlist');
+    if (!r.jury.length) { box.innerHTML = '<div class="hint">Nessuno ha ancora votato: parti per primo!</div>'; return; }
+    for (const j of r.jury) {
+      let el = box.querySelector(`[data-n="${CSS.escape(j.name)}"]`);
+      if (!el) { el = document.createElement('div'); el.className = 'jchip'; el.dataset.n = j.name; el.innerHTML = '<span class="jn"></span><span class="jb"><i></i></span><span class="jc"></span>'; el.querySelector('.jn').textContent = j.name; box.appendChild(el); }
+      el.querySelector('i').style.width = (r.n ? j.count / r.n * 100 : 0) + '%';
+      el.querySelector('.jc').textContent = j.count + '/' + r.n;
+      if (prevJ[j.name] != null && j.count > prevJ[j.name]) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      prevJ[j.name] = j.count;
+    }
+  } catch {}
+}
+setInterval(pollReact, 1300); setInterval(pollJury, 3000);
+
+// ================= pronostico: chi vincerà? =================
+let myBet = null, betLocked = false;
+async function loadBet() { try { const r = await api('/api/bet'); myBet = r.pizza; betLocked = r.locked; } catch {} renderBet(); }
+function renderBet() {
+  const box = $('betlist'); if (!box || !cfg) return; box.innerHTML = '';
+  cfg.pizzas.forEach(p => {
+    const d = document.createElement('div'); d.className = 'bet' + (myBet === p.id ? ' on' : '');
+    d.innerHTML = '<span></span><span>' + (myBet === p.id ? '🔮' : '') + '</span>'; d.firstChild.textContent = p.name;
+    d.onclick = async () => {
+      const r = await api('/api/bet', {method:'POST', body: JSON.stringify({name, pizza: p.id})});
+      if (r.ok) { myBet = p.id; renderBet(); window.sfx && sfx.tap(); navigator.vibrate && navigator.vibrate(10); } else alert(r.error || 'Errore');
+    };
+    box.appendChild(d);
+  });
+}
+if (name) showList(); else show('login');
+</script>
+</body>
+</html>

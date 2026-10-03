@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14090a">
+<title>Statistiche · Sfida Pizze</title>
+<style>
+  :root { --bg:#14090a; --bg2:#1d0f0d; --bar:rgba(20,9,10,.8); --ink:#fff4e6; --mut:#b9a392; --gold:#ffb703; --red:#ff4d2e; --gold-rgb:255,183,3; --red-rgb:255,77,46;
+    --glass:rgba(255,255,255,.07); --line:rgba(255,255,255,.12); --a1:#ff4d2e; --a2:#ffb703; --a3:#c2185b; --font:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  * { box-sizing:border-box; }
+  html { background:var(--bg); }
+  body { margin:0; min-height:100vh; font-family:var(--font); color:var(--ink); background:var(--bg); padding:22px 16px 60px; }
+  .aurora { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .aurora i { position:absolute; width:70vmax; height:70vmax; border-radius:50%; filter:blur(90px); opacity:.45; }
+  .aurora i b { display:block; width:100%; height:100%; border-radius:50%; animation:drift 22s ease-in-out infinite alternate; }
+  .aurora i:nth-child(1) { top:-30vmax; right:-25vmax; } .aurora i:nth-child(1) b { background:radial-gradient(circle,var(--a1),transparent 65%); }
+  .aurora i:nth-child(2) { bottom:-35vmax; left:-30vmax; } .aurora i:nth-child(2) b { background:radial-gradient(circle,var(--a2),transparent 65%); animation-duration:27s; }
+  @keyframes drift { to { transform:translate(12vmax,-8vmax) scale(1.25) rotate(40deg); } }
+  .wrap { position:relative; z-index:1; max-width:1100px; margin:0 auto; }
+  h1 { margin:6px 0 4px; font-size:clamp(1.7rem,4vw,2.6rem); font-weight:900; background:linear-gradient(90deg,var(--gold),var(--red)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:var(--mut); margin:0 0 20px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
+  .tile { background:var(--glass); border:1px solid var(--line); border-radius:16px; padding:14px; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .tile b { display:block; font-size:1.9rem; font-weight:900; font-variant-numeric:tabular-nums; color:var(--gold); }
+  .tile span { color:var(--mut); font-size:.78rem; text-transform:uppercase; letter-spacing:.1em; }
+  .card { background:var(--glass); border:1px solid var(--line); border-radius:20px; padding:18px; margin-bottom:16px; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); overflow-x:auto; }
+  h2 { margin:0 0 4px; font-size:.95rem; color:var(--mut); text-transform:uppercase; letter-spacing:.12em; }
+  .note { color:var(--mut); font-size:.82rem; margin:0 0 12px; }
+  table { border-collapse:separate; border-spacing:3px; width:100%; font-size:.88rem; font-variant-numeric:tabular-nums; }
+  th { color:var(--mut); font-weight:600; font-size:.72rem; padding:4px 6px; text-align:center; }
+  td { padding:7px 8px; border-radius:8px; text-align:center; background:rgba(255,255,255,.03); }
+  th:first-child, td:first-child { text-align:left; background:none; font-weight:700; white-space:nowrap; }
+  td small { display:block; color:var(--mut); font-size:.7rem; }
+  .hist { display:flex; align-items:flex-end; gap:6px; height:140px; }
+  .hist div { flex:1; text-align:center; font-size:.75rem; color:var(--mut); }
+  .hist i { display:block; width:100%; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--gold),var(--red)); min-height:2px; }
+  .mini { display:inline-flex; align-items:flex-end; gap:1px; height:22px; }
+  .mini i { width:5px; background:var(--gold); border-radius:1px; opacity:.85; }
+  .bars .r { display:grid; grid-template-columns:150px 1fr 60px; gap:10px; align-items:center; margin:6px 0; font-size:.88rem; }
+  .bars .b { height:10px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
+  .bars .b i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--gold),var(--red)); }
+  svg text { fill:var(--mut); font-size:11px; font-family:var(--font); }
+  .btns { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+  .btns a { padding:11px 16px; border-radius:12px; background:linear-gradient(135deg,var(--gold),var(--red)); color:#fff; text-decoration:none; font-weight:800; }
+  .btns a.sec { background:var(--glass); border:1px solid var(--line); color:var(--ink); }
+  pre { margin:0; white-space:pre-wrap; color:var(--mut); font-size:.8rem; line-height:1.5; }
+  .empty { color:var(--mut); padding:20px; text-align:center; }
+  .back { color:var(--mut); text-decoration:none; font-size:.9rem; }
+</style>
+<script src="/assets/theme.js" defer></script>
+</head>
+<body>
+<div class="aurora"><i><b></b></i><i><b></b></i></div>
+<div class="wrap">
+  <a class="back" href="javascript:history.length>1?history.back():close()">← Indietro</a>
+  <h1>📊 Statistiche per smanettoni</h1>
+  <p class="sub">Tutti i numeri dietro la sfida: distribuzioni, correlazioni, bias dei giurati e dati grezzi da scaricare.</p>
+  <div id="app"><div class="empty">Carico i numeri…</div></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f1 = v => v == null ? '–' : v.toFixed(1).replace('.', ','), f2 = v => v == null ? '–' : v.toFixed(2).replace('.', ',');
+const heat = (v, a = .4) => v == null ? 'rgba(255,255,255,.03)' : `hsla(${(v - 1) / 9 * 125},75%,48%,${a})`;
+const PAL = ['#ffb703','#ff4d2e','#4cc9f0','#7bd88f','#c77dff','#ff7eb6','#e9ff70','#ff9f45'];
+
+function pearson(xs, ys) {
+  const n = xs.length; if (n < 3) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (xs[i]-mx)*(ys[i]-my); sxx += (xs[i]-mx)**2; syy += (ys[i]-my)**2; }
+  return sxx && syy ? sxy / Math.sqrt(sxx*syy) : null;
+}
+
+async function main() {
+  const res = await fetch('/api/stats', {cache:'no-store'});
+  if (!res.ok) { $('app').innerHTML = '<div class="card empty">🔒 Le statistiche si aprono a fine serata, quando parte la cerimonia di premiazione.</div>'; return; }
+  const d = await res.json(), cats = d.categories, P = d.pizzas.filter(p => p.n > 0);
+  const out = [];
+
+  // ---- panoramica
+  const allMeans = P.map(p => p.total).filter(v => v != null);
+  const gm = allMeans.length ? allMeans.reduce((a, b) => a + b, 0) / allMeans.length : null;
+  out.push(`<div class="tiles">
+    <div class="tile"><b>${d.meta.votes}</b><span>schede di voto</span></div>
+    <div class="tile"><b>${d.meta.voters}</b><span>giurati</span></div>
+    <div class="tile"><b>${d.meta.pizzas}</b><span>pizze</span></div>
+    <div class="tile"><b>${f2(gm)}</b><span>media generale</span></div>
+    <div class="tile"><b>${d.meta.points}</b><span>punteggi dati</span></div>
+    <div class="tile"><b>${d.meta.bets}</b><span>pronostici</span></div></div>`);
+
+  // ---- medie e deviazioni per categoria
+  out.push(`<div class="card"><h2>Medie e deviazione standard</h2><p class="note">Ogni cella: media; sotto, σ (deviazione standard della popolazione) e numero di voti. Colore = media, da rosso (1) a verde (10).</p>
+    <table><tr><th></th>${cats.map(c => `<th>${c.icon}<br>${esc(c.label)}</th>`).join('')}<th>Totale</th><th>Distribuzione</th></tr>
+    ${P.map(p => { const mx = Math.max(...p.hist, 1);
+      return `<tr><td>${esc(p.name)}</td>${cats.map(c => { const s = p.cats[c.id]; return `<td style="background:${heat(s && s.mean)}">${s && s.mean != null ? f2(s.mean) : '–'}<small>σ ${s && s.sd != null ? f2(s.sd) : '–'} · n=${s ? s.n : 0}</small></td>`; }).join('')}
+      <td style="background:${heat(p.total, .55)};font-weight:900">${f2(p.total)}<small>σ ${f2(p.sd)}</small></td>
+      <td><span class="mini">${p.hist.map(v => `<i style="height:${Math.max(2, v / mx * 22)}px"></i>`).join('')}</span></td></tr>`; }).join('')}</table></div>`);
+
+  // ---- istogramma globale
+  const H = Array(10).fill(0); P.forEach(p => p.hist.forEach((v, i) => H[i] += v)); const hm = Math.max(...H, 1);
+  out.push(`<div class="card"><h2>Distribuzione di tutti i voti</h2><p class="note">Quante volte è stato dato ogni punteggio da 1 a 10 (tutte le categorie, tutte le pizze).</p>
+    <div class="hist">${H.map((v, i) => `<div><i style="height:${v / hm * 100}%"></i>${v}<br><b style="color:var(--ink)">${i + 1}</b></div>`).join('')}</div></div>`);
+
+  // ---- correlazioni tra categorie
+  const cid = cats.map(c => c.id);
+  const cell = (a, b) => { if (a === b) return `<td style="background:rgba(255,255,255,.08)">1</td>`; const r = d.corr[a + '|' + b];
+    return r == null ? '<td>–</td>' : `<td style="background:${r >= 0 ? `rgba(80,220,120,${Math.abs(r) * .75})` : `rgba(255,90,90,${Math.abs(r) * .75})`}">${f2(r)}</td>`; };
+  out.push(`<div class="card"><h2>Correlazioni tra categorie</h2><p class="note">Coefficiente di Pearson calcolato sulle singole schede: verde = chi dà un voto alto a una categoria tende a darlo anche all'altra, rosso = il contrario.</p>
+    <table><tr><th></th>${cats.map(c => `<th>${c.icon}</th>`).join('')}</tr>${cats.map(a => `<tr><td>${a.icon} ${esc(a.label)}</td>${cats.map(b => cell(a.id, b.id)).join('')}</tr>`).join('')}</table></div>`);
+  const drv = d.drivers.filter(x => x.r != null).sort((a, b) => b.r - a.r);
+  out.push(`<div class="card bars"><h2>Cosa conta davvero nel voto</h2><p class="note">Correlazione di ogni categoria con la media delle <i>altre</i> categorie della stessa scheda: più è alta, più quella categoria "trascina" il giudizio complessivo.</p>
+    ${drv.map(x => `<div class="r"><span>${x.icon} ${esc(x.label)}</span><div class="b"><i style="width:${Math.max(0, x.r) * 100}%"></i></div><b>${f2(x.r)}</b></div>`).join('') || '<div class="empty">Servono più voti.</div>'}</div>`);
+
+  // ---- prezzo vs punteggio
+  const pts = P.filter(p => p.price && p.total != null);
+  if (pts.length >= 2) {
+    const xs = pts.map(p => p.price), ys = pts.map(p => p.total), x0 = Math.min(...xs) - .3, x1 = Math.max(...xs) + .3, y0 = Math.max(0, Math.min(...ys) - 1), y1 = Math.min(10, Math.max(...ys) + 1);
+    const X = v => 60 + (v - x0) / (x1 - x0) * 520, Y = v => 300 - (v - y0) / (y1 - y0) * 270, r = pearson(xs, ys);
+    let line = ''; if (pts.length >= 3 && r != null) { const mx = xs.reduce((a, b) => a + b) / xs.length, my = ys.reduce((a, b) => a + b) / ys.length;
+      let sxy = 0, sxx = 0; xs.forEach((x, i) => { sxy += (x-mx)*(ys[i]-my); sxx += (x-mx)**2; }); const m = sxy / sxx, q = my - m * mx;
+      line = `<line x1="${X(x0)}" y1="${Y(m*x0+q)}" x2="${X(x1)}" y2="${Y(m*x1+q)}" stroke="var(--mut)" stroke-dasharray="5 5"/>`; }
+    out.push(`<div class="card"><h2>Prezzo vs punteggio</h2><p class="note">${r != null ? `Correlazione prezzo/punteggio: r = ${f2(r)} (n=${pts.length}). ` : ''}Ogni punto è una pizza; la retta tratteggiata è la regressione lineare.</p>
+      <svg viewBox="0 0 600 330" style="width:100%;max-width:700px">${line}
+      <line x1="60" y1="300" x2="590" y2="300" stroke="var(--line)"/><line x1="60" y1="20" x2="60" y2="300" stroke="var(--line)"/>
+      <text x="320" y="324" text-anchor="middle">prezzo (€)</text><text x="14" y="160" transform="rotate(-90 14 160)" text-anchor="middle">punteggio</text>
+      ${pts.map((p, i) => `<circle cx="${X(p.price)}" cy="${Y(p.total)}" r="7" fill="${PAL[i % PAL.length]}" opacity=".9"/><text x="${X(p.price) + 10}" y="${Y(p.total) + 4}">${esc(p.name.slice(0, 20))}</text>`).join('')}</svg></div>`);
+  }
+
+  // ---- aspettativa vs realtà
+  const ex = P.filter(p => p.expect != null && p.real != null);
+  if (ex.length) out.push(`<div class="card"><h2>Aspettativa vs realtà</h2><p class="note">Realtà = media delle categorie senza l'aspettativa. Δ = realtà − aspettativa (positivo = sorpresa, negativo = delusione).</p>
+    <table><tr><th></th><th>Aspettativa</th><th>Realtà</th><th>Δ</th></tr>${ex.sort((a, b) => b.delta - a.delta).map(p => `<tr><td>${esc(p.name)}</td><td style="background:${heat(p.expect)}">${f2(p.expect)}</td><td style="background:${heat(p.real)}">${f2(p.real)}</td><td style="color:${p.delta >= 0 ? '#7bd88f' : '#ff7a7a'};font-weight:800">${p.delta >= 0 ? '+' : ''}${f2(p.delta)}</td></tr>`).join('')}</table></div>`);
+
+  // ---- giurati
+  out.push(`<div class="card"><h2>I giurati</h2><p class="note">Media e σ dei punteggi dati (aspettativa esclusa). Bias = quanto il giurato si discosta in media dalla media degli altri sulle stesse pizze (positivo = più generoso).</p>
+    <table><tr><th></th><th>Pizze</th><th>Media</th><th>σ</th><th>Bias</th><th>Preferita</th><th>Meno amata</th></tr>
+    ${d.voters.map(v => `<tr><td>${esc(v.name)}</td><td>${v.pizzas}</td><td style="background:${heat(v.mean)}">${f2(v.mean)}</td><td>${f2(v.sd)}</td><td style="color:${v.bias == null ? 'inherit' : v.bias >= 0 ? '#7bd88f' : '#ff7a7a'}">${v.bias == null ? '–' : (v.bias >= 0 ? '+' : '') + f2(v.bias)}</td><td>${esc(v.fav || '–')}</td><td>${esc(v.least || '–')}</td></tr>`).join('')}</table></div>`);
+
+  // ---- matrice giurato x pizza
+  out.push(`<div class="card"><h2>Matrice giurati × pizze</h2><p class="note">Media di ogni scheda (aspettativa esclusa).</p>
+    <table><tr><th></th>${P.map(p => `<th>${esc(p.name.split(' ').slice(0, 2).join(' '))}</th>`).join('')}</tr>
+    ${d.voters.map(v => `<tr><td>${esc(v.name)}</td>${P.map(p => { const x = d.matrix[v.name + '|' + p.id]; return `<td style="background:${heat(x)}">${f1(x)}</td>`; }).join('')}</tr>`).join('')}</table></div>`);
+
+  // ---- gioco
+  if (d.game.length) out.push(`<div class="card bars"><h2>🥷 Pizza Ninja</h2><p class="note">Record di ogni giocatore.</p>${d.game.map((s, i) => `<div class="r"><span>${i + 1}. ${esc(s.name)}</span><div class="b"><i style="width:${s.best / d.game[0].best * 100}%"></i></div><b>${s.best}</b></div>`).join('')}</div>`);
+
+  // ---- dati grezzi + note
+  out.push(`<div class="card"><h2>Dati grezzi</h2><p class="note">Esporta tutto per analizzarlo con i tuoi strumenti preferiti.</p>
+    <div class="btns"><a href="/api/export.csv">⬇️ CSV delle schede</a><a class="sec" href="/api/stats" target="_blank">{ } JSON delle statistiche</a></div></div>
+  <div class="card"><h2>Come si calcola</h2><pre>Totale pizza   = media delle medie di categoria (ogni categoria pesa uguale)
+σ              = deviazione standard della popolazione (non campionaria)
+Pearson r      = covarianza / (σx · σy), calcolato sulle singole schede
+Driver         = r tra una categoria e la media delle altre della stessa scheda
+Bias giurato   = media(voto scheda − media delle altre schede sulla stessa pizza)
+Realtà         = media delle categorie escluso "aspettativa"
+Generato       = ${new Date(d.meta.generated * 1000).toLocaleString('it-IT')}</pre></div>`);
+  $('app').innerHTML = out.join('');
+}
+main();
+</script>
+</body>
+</html>
