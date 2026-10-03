@@ -13,8 +13,9 @@
     background:radial-gradient(120% 90% at 50% 0%,var(--bg2),var(--bg) 70%); animation:cin .6s both; }
   @keyframes cin { from { opacity:0; transform:scale(1.04); } }
   #cfx { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; }
-  #cbtn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:250; padding:10px 18px; border-radius:99px; border:1px solid rgba(var(--gold-rgb),.6); background:linear-gradient(90deg,var(--gold),var(--red)); color:#111; font:800 .95rem var(--font); cursor:pointer; box-shadow:0 8px 30px rgba(var(--red-rgb),.5); animation:cbtnp 1.6s ease-in-out infinite; }
-  @keyframes cbtnp { 50% { transform:translateX(-50%) scale(1.06); } }
+  #cbtn { display:block; width:100%; margin:12px 0; padding:14px 18px; border-radius:16px; border:1px solid rgba(var(--gold-rgb),.5); background:linear-gradient(90deg,var(--gold),var(--red)); color:#1a0f0a; font:800 1.05rem var(--font); letter-spacing:.02em; cursor:pointer; box-shadow:0 6px 22px rgba(var(--red-rgb),.35); animation:cbtnp 1.8s ease-in-out infinite; }
+  #cbtn.hbtn { width:auto; margin:0; display:inline-block; }
+  @keyframes cbtnp { 50% { filter:brightness(1.18); } }
   #cer .cx { position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px; z-index:5; width:42px; height:42px; padding:0; border-radius:50%; border:1px solid var(--line); background:var(--glass); color:var(--ink); font-size:1.1rem; cursor:pointer; }
   #cer .cin { position:relative; z-index:2; max-width:980px; margin:0 auto; text-align:center; }
   #cer .ctitle { font-size:clamp(1.6rem,5vw,3rem); font-weight:900; letter-spacing:.06em; text-transform:uppercase; margin:8px 0 4px;
@@ -115,7 +116,8 @@
     if (btn) return;
     btn = document.createElement('button'); btn.id = 'cbtn'; btn.textContent = '🏆 Apri il resoconto';
     btn.onclick = () => { const s = Date.now() + off - 5000; hideBtn(); start(s, true); };
-    document.body.appendChild(btn);
+    if (isDash) { btn.className = 'hbtn'; $('cerBtn').after(btn); }              // dashboard: accanto ai pulsanti in alto
+    else { const h = document.querySelector('#list .head'); h ? h.after(btn) : document.body.appendChild(btn); }   // telefono: sotto l'intestazione, nel flusso della pagina
   }
   function hideBtn() { btn && btn.remove(); btn = null; }
 
